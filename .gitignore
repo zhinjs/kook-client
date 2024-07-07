@@ -1,0 +1,6 @@
+/src/test.ts
+/lib/
+/docs/.vitepress/cache/
+/node_modules/
+/.idea/
+/.vscode/
