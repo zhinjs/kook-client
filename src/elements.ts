@@ -1,125 +1,316 @@
-import {Dict} from '@/types'
-
-export enum MusicPlatform {
-    qq = "qq",
-    netease = "163",
-}
-
-export interface Quotable {
-    id?: string
-    event_id?: string
-}
-
-export interface MessageElemMap {
-    text: {
-        text: string;
-    };
-    at: {
-        user_id: 'all' | string
-    };
-    face: {
-        /** face为0~348，sface不明 */
-        id: number
-        /** 表情说明，接收消息时有效 */
-        text?: string
-    };
-    image: {
-        /**
-         * @type {string} 本地图片文件路径，例如"/tmp/1.jpg"
-         * @type {string} base64协议数据，例如 "base64://*****" 或 "data:image/png;base64,iVBORw0KG
-         * @type {string} 网络图片文件地址，例如"http://www.baidu.com/iconfont.png"
-         * @type {Buffer} 图片Buffer数据
-         */
-        file: string | Buffer
-        url?: string
-        /** 仅接收有效 */
-        name?: string
-    };
-    video: {
-        file: string
-        url?: string
-        /** 仅接收有效 */
-        name?: string
-    };
-    audio: {
-        file: string
-        url?: string
-        /** 仅接收有效 */
-        name?: string
-    };
-    markdown: {
-        content: string
-        custom_template_id: never
-        params: never
-    } | {
-        custom_template_id: string
-        content: never
-        params: { key: string, values: string }[]
+type ElementMap={
+    'plain-text':{
+        content:string
+        emoji?:boolean
     }
-    keyboard: {
-        id: string
+    'kmarkdown':{
+        content:string
     }
-    reply: Quotable;
-    link: {
-        channel_id: string
-    };
-    button: {
-        data: Dict
-    };
-    ark: {
-        template_id: number
-        kv: Dict<string, 'key' | 'value'>[]
-    };
-    embed: {
-        title: string
-        prompt: string
-        htumbnail: Dict<string>
-        fields: Dict<string, 'name'>[]
+    'image':{
+        src:string
+        alt?:string
+        size?:'sm'|'lg'
+        circle?:boolean
+    }
+    'button':{
+        theme:'primary'|'warning'|'danger'|'info'
+        value:string
+        click?:'link'|'return-val'
+        text:string
+    }
+    paragraph:{
+        cols:1|2|3
+        fields:(TextElement|MarkdownElement)[]
     }
 }
+export type ElementType=keyof ElementMap
+export type Element<T extends ElementType=ElementType>={
+    type:T
+}&ElementMap[T]
+export type TextElement=Element<'plain-text'>
+export type MarkdownElement=Element<'kmarkdown'>
+export type ImageElement=Element<'image'>
+export type ButtonElement=Element<'button'>
+export type ParagraphElement=Element<'paragraph'>
+export type ElementGenerator={
+    <T extends ElementType=ElementType>(type:T,data:ElementMap[T]):Element<T>
+    text(content:string,emoji?:boolean):TextElement
+    markdown(content:string):MarkdownElement
+    image(src:string,alt?:string,size?:'sm'|'lg',circle?:boolean):ImageElement
+    button(text:string,value:string,theme:'primary'|'warning'|'danger'|'info',click?:'link'|'return-val'):ButtonElement
+    paragraph(cols:1|2|3,fields:(TextElement|MarkdownElement)[]):ParagraphElement
+}
+export const element:ElementGenerator=function (type,data){
+    return {
+        type,
+        ...data
+    }
+} as ElementGenerator
+element.text=(content,emoji)=>({
+    type:'plain-text',
+    content,
+    emoji
+})
+element.markdown=(content)=>({
+    type:'kmarkdown',
+    content
+})
+element.image=(src,alt,size,circle)=>({
+    type:'image',
+    src,
+    alt,
+    size,
+    circle
+})
+element.button=(text,value,theme,click)=>({
+    type:'button',
+    text,
+    value,
+    theme,
+    click
+})
+element.paragraph=(cols,fields)=>({
+    type:'paragraph',
+    cols,
+    fields
+})
+type ModuleMap={
+    header:{
+        text:TextElement
+    }
+    section:{
+        text?:TextElement|MarkdownElement|ParagraphElement
+        mode:'left'|'right'
+        accessory:ImageElement|ButtonElement
+    }
+    'image-group':{
+        elements:ImageElement[]
+    }
+    'container':{
+        elements:ImageElement[]
+    }
+    'action-group':{
+        elements:ButtonElement[]
+    }
+    'context':{
+        elements:(TextElement|MarkdownElement|ImageElement)[]
+    }
+    'divider':{}
+    file:{
+        src:string
+        title:string
+    }
+    audio:{
+        src:string
+        title:string
+        cover?:string
+    }
+    video:{
+        src:string
+        title:string
+    }
+    countdown:{
+        startTime:number
+        endTime:number
+        mode:'day'|'hour'|'second'
+    }
+    invite:{
+        code:string
+    }
+}
+export type ModuleType=keyof ModuleMap
+export type Module<T extends ModuleType=ModuleType>={
+    type:T
+}&ModuleMap[T]
+export type HeaderModule=Module<'header'>
+export type SectionModule=Module<'section'>
 
-export type MessageElemType = keyof MessageElemMap;
-// 消息元素
-export type MessageElem<T extends MessageElemType = MessageElemType> = {
-    type: T;
-} & MessageElemMap[T];
-// 可以发送的消息类型
-export type TextElem = MessageElem<"text">;
-export type AtElem = MessageElem<"at">;
-export type FaceElem = MessageElem<"face">;
-export type ArkElem = MessageElem<'ark'>
-export type EmbedElem = MessageElem<'embed'>
-export type ImageElem = MessageElem<"image">;
-export type VideoElem = MessageElem<"video">;
-export type AudioElem = MessageElem<"audio">;
-export type LinkElem = MessageElem<'link'>
-export type MDElem = MessageElem<'markdown'>
-export type KeyboardElem = MessageElem<'keyboard'>
-export type ButtonElem = MessageElem<'button'>
-export type ReplyElem = MessageElem<"reply">;
+export type ImageModule=Module<'image-group'>
+export type ContainerModule=Module<'container'>
+export type ActionModule=Module<'action-group'>
+export type ContextModule=Module<'context'>
+export type DividerModule=Module<'divider'>
+export type FileModule=Module<'file'>|Module<'audio'>|Module<'video'>
+export type CountdownModule=Module<'countdown'>
+export type InviteModule=Module<'invite'>
+export type ModuleGenerator={
+    <T extends ModuleType=ModuleType>(type:T,data:ModuleMap[T]):Module<T>
+    header:(text:TextElement)=>HeaderModule
+    section:(text?:TextElement|MarkdownElement|ParagraphElement,mode?:'left'|'right',accessory?:ImageElement|ButtonElement)=>SectionModule
+    image:(elements:ImageElement[])=>ImageModule
+    container:(elements:ImageElement[])=>ContainerModule
+    action:(elements:ButtonElement[])=>ActionModule
+    context:(elements:(TextElement|MarkdownElement|ImageElement)[])=>ContextModule
+    divider:()=>DividerModule
+    file:(src:string,title:string)=>FileModule
+    audio:(src:string,title:string,cover?:string)=>FileModule
+    video:(src:string,title:string)=>FileModule
+    countdown:(startTime:number,endTime:number,mode?:'day'|'hour'|'second')=>CountdownModule
+    invite:(code:string)=>InviteModule
+}
+export const msgMod:ModuleGenerator=function (type,data) {
+    return {
+        type,
+        ...data
+    }
+} as ModuleGenerator
+msgMod.header=(text)=>({
+    type:'header',
+    text
+})
+msgMod.section=(text,mode,accessory)=>({
+    type:'section',
+    text,
+    mode,
+    accessory
+})
+msgMod.image=(elements)=>({
+    type:'image-group',
+    elements
+})
+msgMod.container=(elements)=>({
+    type:'container',
+    elements
+})
+msgMod.action=(elements)=>({
+    type:'action-group',
+    elements
+})
+msgMod.context=(elements)=>({
+    type:'context',
+    elements
+})
+msgMod.divider=()=>({
+    type:'divider'
+})
+msgMod.file=(src,title)=>({
+    type:'file',
+    src,
+    title
+})
+msgMod.audio=(src,title,cover)=>({
+    type:'audio',
+    src,
+    title,
+    cover
+})
+msgMod.video=(src,title)=>({
+    type:'video',
+    src,
+    title
+})
+msgMod.countdown=(startTime,endTime,mode)=>({
+    type:'countdown',
+    startTime,
+    endTime,
+    mode
+})
+msgMod.invite=(code)=>({
+    type:'invite',
+    code
+})
 
-// 重复组合的消息元素
-type RepeatableCombineElem = string | TextElem | FaceElem | LinkElem | AtElem | ButtonElem;
-type SingleWithRepeatEnd<T extends MessageElem> = [T, ...RepeatableCombineElem[]] // 单元素+组合元素
-type SingleWithRepeat<T extends MessageElem> = [...RepeatableCombineElem[], T] | SingleWithRepeatEnd<T> // 组合元素+单元素
-
-// 带回复的消息元素
-type WithReply<T extends MessageElem> =
-    | T
-    | [T]
-    | SingleWithRepeat<T>
-    | [ReplyElem, ...SingleWithRepeat<T>]
-    | [ReplyElem, ...RepeatableCombineElem[]];
-// 可发送的消息元素
-export type Sendable =
-    | RepeatableCombineElem
-    | (RepeatableCombineElem)[] // 可重复组合的消息元素
-    | WithReply<
-    | ImageElem // 图片元素
-    | KeyboardElem // 按钮组，供按钮模板使用
-    | MDElem // markdown元素
-    | ArkElem // Ark 元素
-    | EmbedElem // Embed元素 仅频道和频道私信支持
-    | VideoElem // 视频消息元素
-    | AudioElem // 语音消息元素
->; // 带回复的消息元素
+type SegmentMap={
+    text:{
+        text:string
+    }
+    at:{
+        user_id:string
+    }
+    card:{
+        modules:Module[]
+    }
+    image:{
+        url:string
+        title?:string
+    }
+    video:{
+        url:string
+        title?:string
+    }
+    audio:{
+        url:string
+        title?:string
+    }
+    markdown:{
+        text:string
+    }
+    reply:{
+        id:string
+    }
+    file:{
+        url:string
+        name?:string
+        file_type?:string
+        size?:number
+    }
+}
+export type SegmentType=keyof SegmentMap
+export type Segment<T extends SegmentType=SegmentType> = {
+    type:T
+}&SegmentMap[T]
+/**
+ * 仅发送，不会收到
+ */
+export type TextSegment=Segment<'text'>
+/**
+ * 收发通用
+ */
+export type AtSegment=Segment<'at'>
+export type CardSegment=Segment<'card'>
+/**
+ * 收发通用
+ */
+export type ImageSegment=Segment<'image'>
+/**
+ * 收发通用
+ */
+export type AudioSegment=Segment<'audio'>
+/**
+ * 收发通用
+ */
+export type VideoSegment=Segment<'video'>
+/**
+ * 收发通用
+ */
+export type MarkdownSegment=Segment<'markdown'>
+/**
+ * 收发通用
+ */
+export type ReplySegment=Segment<'reply'>
+/**
+ * 仅接收
+ */
+export type FileSegment=Segment<'file'>
+export type Quotable={
+    message_id:string
+}
+export type MessageSegment=AtSegment|TextSegment|ImageSegment|MarkdownSegment|ReplySegment|FileSegment|CardSegment|VideoSegment|AudioSegment
+export type Sendable=string|MessageSegment|Array<string|MessageSegment>
+export type SegmentGenerator={
+    <T extends SegmentType>(type:T,attrs:SegmentMap[T]):Segment<T>
+    image:(url:string)=>ImageSegment
+    video:(url:string)=>VideoSegment
+    audio:(url:string)=>AudioSegment
+    markdown:(text:string)=>MarkdownSegment
+    text:(text:string)=>TextSegment
+    at:(user_id:string)=>AtSegment
+    card:(attrs:SegmentMap['card'])=>CardSegment
+    reply:(message_id:string)=>ReplySegment
+    file:(url:string)=>FileSegment
+}
+export const segment:SegmentGenerator=function <T extends SegmentType>(type:T,attrs:SegmentMap[T]){
+    return {
+        type,
+        ...attrs
+    }
+} as SegmentGenerator
+segment.at=user_id=>segment('at', {user_id})
+segment.image=(url)=>segment('image', {url})
+segment.markdown=text=>segment('markdown', {text})
+segment.text=text=>segment('text', {text})
+segment.card=attrs=>segment('card',attrs)
+segment.reply=message_id=>segment('reply', {id:message_id})
+segment.file=url=>segment('file', {url})
+segment.video=url=>segment('video', {url})
+segment.audio=url=>segment('audio', {url})

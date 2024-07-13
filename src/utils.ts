@@ -1,6 +1,7 @@
-import {BinaryLike, createHash} from "crypto";
+import {BinaryLike, createHash, createCipheriv, createDecipheriv} from "crypto";
 import * as fs from 'fs'
 import axios from 'axios'
+import {Stream} from "node:stream";
 
 export const toObject = <T = any>(data: any) => {
     if (Buffer.isBuffer(data)) return JSON.parse(data.toString()) as T;
@@ -15,81 +16,47 @@ export function isEmpty<T>(data: T) {
     if (typeof data !== "object") return false
     return Reflect.ownKeys(data).length === 0;
 }
-
+export function genGroupId(guild_id:string,channel_id:string):string{
+    return Buffer.from(`${guild_id}${channel_id}`,'utf8')
+        .toString('base64')
+        .slice(0,-1)
+}
+export function parseGroupId(group_id:string):{guild_id:string,channel_id:string}{
+    const decoded=Buffer.from(group_id+'=','base64').toString('utf8')
+    return {
+        guild_id:decoded.slice(0,16),
+        channel_id:decoded.slice(16)
+    }
+}
 export function remove<T>(list: T[], item: T) {
     const index = list.indexOf(item);
     if (index !== -1) list.splice(index, 1);
 }
-export async function getBase64FromLocal(filepath:string){
-    return (await fs.readFileSync(filepath.replace("file://", ""))).toString('base64')
-}
-export async function getBase64FromWeb(url:string){
-    const res = await axios.get(url,{
-        responseType:'arraybuffer'
-    })
-    return Buffer.from(res.data).toString('base64')
-}
-export function getFileBase64(file:string|Buffer){
-    if(Buffer.isBuffer(file)) return file.toString('base64')
-    if(file.startsWith('http')) return getBase64FromWeb(file)
-    if(file.startsWith('base64://')) return file.replace('base64://', '')
-    try { return getBase64FromLocal(file) } catch {}
-    return file
-}
-export function deepClone<T extends object>(obj: T) {
-    if (typeof obj !== "object") return obj
-    if (Array.isArray(obj)) return obj.map(deepClone)
-    const Constructor = obj.constructor;
 
-    let newObj: T = Constructor()
-    for (let key in obj) {
-        newObj[key] = deepClone(obj[key as any])
-    }
-    return newObj;
-
+/**
+ * create stream from local file
+ * @param filepath {string} filepath
+ */
+export async function createLocalFileStream(filepath:string):Promise<Stream>{
+    return fs.createReadStream(filepath.replace('^file://',''))
 }
 
 /**
- * 寻找数组中最后一个符合条件的元素下标
- * @param list 数组
- * @param predicate 条件
- * @returns {number} 元素下标，未找到返回-1
+ * create stream from remote url
+ * @param url {string} remote url
  */
-export function findLastIndex<T>(list: T[], predicate: (item: T, index: number) => boolean) {
-    for (let i = list.length - 1; i >= 0; i--) {
-        if (predicate(list[i], i)) return i;
-    }
-    return -1;
+export async function createRemoteFileStream(url:string):Promise<Stream>{
+    return (await axios.get(url, { responseType: 'stream' })).data;
 }
-
-export function trimQuote(str: string) {
-    const quotes: string[][] = [
-        [
-            '"',
-            '"',
-        ],
-        [
-            "'",
-            "'",
-        ],
-        [
-            '`',
-            '`',
-        ],
-        [
-            '“',
-            '”',
-        ],
-        [
-            '‘',
-            '’',
-        ]
-    ]
-    for (let i = 0; i < quotes.length; i++) {
-        const [start, end] = quotes[i];
-        if (str.startsWith(start) && str.endsWith(end)) {
-            return str.slice(1, -1);
-        }
+export async function getFile(file:string|Buffer):Promise<Buffer|Stream>{
+    if (Buffer.isBuffer(file)) return file
+    if(file.match(/^https?:\/\//)) return createRemoteFileStream(file)
+    if(file.match(/^base64:\/\//)) return Buffer.from(file.replace('^base64://',''),'base64')
+    if(file.match(/^file:\/\/.+/)) return createLocalFileStream(file)
+    if(file.match(/^data:.*;base64,.*$/)) return Buffer.from(file.replace(/^data:.*;base64,/,''),'base64')
+    try{
+        return Buffer.from(file)
+    }catch {
+        throw new Error("bad file param: " + file)
     }
-    return str;
 }

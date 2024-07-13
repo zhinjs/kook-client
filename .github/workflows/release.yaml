@@ -14,7 +14,7 @@ jobs:
         id: release
         with:
           release-type: node
-          package-name: qq-official-bot
+          package-name: kook-client
       # Checkout
       - uses: actions/checkout@v4
         if: ${{ steps.release.outputs.release_created }}

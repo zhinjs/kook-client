@@ -4,16 +4,12 @@ layout: doc
 
 # 配置项
 
-| 属性名      | 类型                  | 描述                                    | 默认值   |
-|----------|---------------------|---------------------------------------|-------|
-| appid    | string              | qq机器人的appid 必填                        | -     |
-| secret   | string              | qq机器人的secret 必填                       | -     |
-| sandbox  | boolean             | 是否使用沙箱环境                              | false |
-| intents  | [Intent](#intent)[] | 监听哪些官方事件 必填   | -     |
-| logLevel | string              | 输出日志等级                                | info  |
-| removeAt | boolean             | 是否移除频道/群聊消息@机器人的消息段                   | false |
-| maxRetry | number              | 机器人与qq官方的通信端口时的最大重连次数                 | 10    |
-| timeout  | number              | 机器人与请求官方接口的超时时间，单位毫秒                  | 5000  |
+| 属性名      | 类型                  | 描述                    | 默认值   |
+|----------|---------------------|-----------------------|-------|
+| token    | string              | kook机器人的token 必填      | -     |
+| mode     | webhook\|websocket  | 接收方式 必填               | -     |
+| maxRetry | number              | 机器人与qq官方的通信端口时的最大重连次数 | 10    |
+| timeout  | number              | 机器人与请求官方接口的超时时间，单位毫秒  | 5000  |
 
 # intent
 

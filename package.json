@@ -1,7 +1,7 @@
 {
-    "name": "qq-official-bot",
-    "version": "1.0.0",
-    "description": "qq机器人开发SDK",
+    "name": "kook-client",
+    "version": "0.0.1",
+    "description": "nodejs 平台 kook机器人开发SDK",
     "main": "lib/index.js",
     "engines": {
         "node": ">=16"
@@ -25,13 +25,13 @@
         "README.md"
     ],
     "repository": {
-        "url": "https://github.com/zhinjs/qq-official-bot.git",
+        "url": "https://github.com/zhinjs/kook-client.git",
         "type": "git"
     },
     "keywords": [
-        "qq",
-        "group",
-        "bot"
+        "kook",
+        "robot",
+        "开黑啦"
     ],
     "author": "凉菜",
     "license": "MIT",

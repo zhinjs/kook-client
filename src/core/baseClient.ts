@@ -1,37 +1,35 @@
 import axios, {AxiosInstance} from "axios";
-import {WebSocket} from "ws";
 import {FormData} from 'formdata-node'
 import * as log4js from 'log4js'
 import {EventEmitter} from "events";
-import {SessionManager} from "./sessionManager";
 import {Dict, LogLevel} from "@/types";
-import {EventMap, EventParserMap, GroupMessageEvent, GuildMessageEvent, PrivateMessageEvent, QQEvent} from "@/event";
-import {Bot} from "./bot";
-import {Intent} from "@/constans";
-import { getFileBase64 } from "./utils";
+import {EventMap,ChannelMessageEvent, PrivateMessageEvent} from "@/event";
+import {getFile} from "@/utils";
+import {Receiver} from "@/core/receiver";
+import {User} from "@/entries/user";
 
-export class QQBot extends EventEmitter {
+export class BaseClient extends EventEmitter {
     request: AxiosInstance
     self_id: string
     nickname: string
     status: number
+    config:BaseClient.Config
     logger: log4js.Logger
-    ws: WebSocket
-    sessionManager: SessionManager
+    receiver:Receiver
 
-    constructor(public config: QQBot.Config) {
+    constructor(config:BaseClient.Config ) {
         super()
-        this.sessionManager = new SessionManager(this)
+        this.config=Object.assign({},BaseClient.defaultConfig,config)
         this.request = axios.create({
-            baseURL: this.config.sandbox ? 'https://sandbox.api.sgroup.qq.com' : `https://api.sgroup.qq.com`,
+            baseURL:'https://www.kookapp.cn/api',
             timeout: config.timeout || 5000,
             headers: {
-                'User-Agent': `BotNodeSDK/0.0.1`
+                'User-Agent': `NodeJSSDK/0.0.1`
             }
         })
         this.request.interceptors.request.use((config) => {
-            config.headers['Authorization'] = `QQBot ${this.sessionManager.access_token}`
-            config.headers['X-Union-Appid'] = this.config.appid
+            config.headers['Authorization'] = `Bot ${this.config.token}`
+            config.headers['Accept-Language'] = this.config.language
             if (config['rest']) {
                 const restObj = config['rest']
                 delete config['rest']
@@ -49,64 +47,37 @@ export class QQBot extends EventEmitter {
             }
             return config
         })
-        this.request.interceptors.response.use((res) => res,(res)=>{
+        this.request.interceptors.response.use((res) => res.data,(res)=>{
             if(!res || !res.response || !res.response.data)  return Promise.reject(res)
             const {code=res?.response.status,message=res?.response.statusText}=res?.response?.data||{}
             const err=new Error(`request "${res.config.url}" error with code(${code}): ${message}`)
             return Promise.reject(err)
         })
-        this.logger = log4js.getLogger(`[QQBot:${this.config.appid}]`)
+        this.logger = log4js.getLogger(`[KOOK]`)
         this.logger.level = this.config.logLevel ||= 'info'
+        this.receiver=Receiver.create(config.mode,this,config)
+        this.logger.info(`using ${config.mode} mode`)
     }
 
-    removeAt(payload: Dict) {
-        if (this.config.removeAt === false) return;
-        const reg = new RegExp(`<@!${this.self_id}>`)
-        const isAtMe = reg.test(payload.content) && payload.mentions.some((mention: Dict) => mention.id === this.self_id)
-        if (!isAtMe) return
-        payload.content = payload.content.replace(reg, '').trimStart()
+    async getSelfInfo():Promise<User.Info>{
+        const {data}=await this.request.get('/v3/user/me')
+        return data
     }
 
-    processPayload(event_id: string, event: string, payload: Dict) {
-        let [post_type, ...sub_type] = event.split('.')
-        const result: Dict = {
-            event_id,
-            post_type,
-            [`${post_type}_type`]: sub_type.join('.'),
-            ...payload
-        }
-        const parser = EventParserMap.get(event)
-        if (!parser) return result
-        return parser.apply(this as unknown as Bot, [event, result])
-    }
-
-
-    dispatchEvent(event: string, wsRes: any) {
-        this.logger.debug(event, wsRes)
-        const payload = wsRes.d;
-        const event_id = wsRes.id || '';
-        if (!payload || !event) return;
-        const transformEvent = QQEvent[event] || 'system'
-        const result=this.processPayload(event_id,transformEvent,payload)
-        if(!result) return this.logger.debug('解析事件失败',wsRes)
-        this.em(transformEvent, result);
-    }
     /**
      * 上传多媒体文件
-     * @param target_id 接受者id
-     * @param target_type  接受者类型：user|group
-     * @param file_data 文件数据：可以是本地文件(file://)或网络地址(http://)或base64或Buffer
-     * @param file_type 数据类型：1 image;2 video; 3 audio
-     * @returns 
+     * @param data 文件数据：可以是本地文件(file://)或网络地址(http://)或base64或Buffer
+     * @returns
      */
-    async uploadMedia(target_id:string,target_type:'user'|'group',file_data: string|Buffer, file_type: 1 | 2 | 3,decode:boolean=false) {
-        file_data= await getFileBase64(file_data)
-        const {data: result} = await this.request.post(`/v2/${target_type}s/${target_id}/files`, {
-            file_type,
-            file_data,
-            srv_send_msg: false,
+    async uploadMedia(data: string|Buffer):Promise<string> {
+        const formData=new FormData()
+        formData.append('file',await getFile(data))
+        const {data: result} = await this.request.post(`/v3/asset/create`, formData,{
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
         })
-        if(!decode) return result
+        return ''
     }
     em(event: string, payload: Dict) {
         const eventNames = event.split('.')
@@ -128,7 +99,7 @@ export class QQBot extends EventEmitter {
 
 }
 
-export interface QQBot {
+export interface KookClient {
     on<T extends keyof EventMap>(event: T, callback: EventMap[T]): this
 
     on<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback: (...args: any[]) => void): this
@@ -163,38 +134,39 @@ export interface QQBot {
 
 }
 
-export namespace QQBot {
-
-    export interface Token {
-        access_token: string
-        expires_in: number
-        cache: string
+export namespace BaseClient {
+    export const defaultConfig:Partial<Config>={
+        ignore:'bot'
     }
-
     export interface Config {
-        appid: string
-        secret: string
-        sandbox?: boolean
-        timeout?: number
-        maxRetry?: number
-        dataDir?:string
+        token:string
+        mode:Receiver.Mode
         /**
-         * 是否移除第一个@
+         * 验证 token，mode 为 webhook 时必填
+         * */
+        verify_token?:string
+        /**
+         * 消息加密秘钥，mode 为 webhook 时必填
          */
-        removeAt?: boolean
-        delay?: Dict<number>
-        intents?: Intent[]
+        encrypt_key?:string
+        /**
+         * 下发数据是否压缩
+         */
+        compress?:boolean
+        language?: string
+        timeout?: number
+        max_retry?: number
+        data_dir?:string
+        ignore: 'bot'|'self'
         logLevel?: LogLevel
     }
 
-    export function getFullTargetId(message: GuildMessageEvent | GroupMessageEvent | PrivateMessageEvent) {
+    export function getFullTargetId(message: ChannelMessageEvent | PrivateMessageEvent) {
         switch (message.message_type) {
             case "private":
-                return `private-${message.guild_id||message.user_id}`
-            case "group":
-                return `group-${(message as GroupMessageEvent).group_id}:${message.user_id}`
-            case "guild":
-                return `guild-${(message as GuildMessageEvent).channel_id}:${message.user_id}`
+                return `private-${message.author_id}`
+            case "channel":
+                return `channel-${(message as ChannelMessageEvent).channel_id}:${message.author_id}`
         }
     }
 }

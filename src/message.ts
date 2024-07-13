@@ -1,43 +1,42 @@
-import {MessageElem, Sendable} from "@/elements";
-import {QQBot} from "@/qqBot";
-import {Dict} from "@/types";
-import {trimQuote} from "@/utils";
-import {Bot} from "./bot";
+import {MessageSegment, segment, Sendable} from "@/elements";
+import {BaseClient} from "@/core/baseClient";
+import {Client} from "./client";
 import {User} from "@/entries/user";
+import {ChannelType, UnsupportedMethodError} from "@/constans";
 
-export class Message {
+export abstract class Message {
+    guild_id: string
     message_type: Message.Type
-    sub_type:Message.SubType='normal'
+    timestamp: number
 
     get self_id() {
-        return this.bot.self_id
+        return this.client.self_id
     }
 
-    guild_id?: string
-    channel_id?: string
-    group_id?: string
-    id: string
     message_id: string
-    sender: Message.Sender
-    user_id: string
+    author_id: string
 
-    constructor(public bot: Bot, attrs: Dict) {
-        const {message_reference,...other_attrs} = attrs
-        Object.assign(this, other_attrs)
-        if(message_reference) this.source={
-            id:message_reference.message_id,
-            message_id: message_reference.message_id,
-        }
+    protected constructor(public client: Client, payload: Message.Payload) {
+        this.author_id = payload.author_id
+        this.raw_message = payload.content
+        this.timestamp = payload.msg_timestamp
+        this.message_id = payload.msg_id
+        this.guild_id = payload.extra.guild_id
+        this.message = Message.convertMessage(payload.content, payload.extra)
+        console.log(this.message)
+    }
+
+    get author() {
+        return this.client.pickUser(this.author_id)
     }
 
     raw_message: string
-    source?: { message_id: string,id:string }
-    message: Sendable
+    message: MessageSegment[]
 
 
     get [Symbol.unscopables]() {
         return {
-            bot: true
+            client: true
         }
     }
 
@@ -45,7 +44,7 @@ export class Message {
     toJSON() {
         return Object.fromEntries(Object.keys(this)
             .filter(key => {
-                return typeof this[key] !== "function" && !(this[key] instanceof QQBot)
+                return typeof this[key] !== "function" && !(this[key] instanceof BaseClient)
             })
             .map(key => [key, this[key]])
         )
@@ -53,124 +52,106 @@ export class Message {
 }
 
 export namespace Message {
-    export interface Sender {
-        user_id: string
-        user_name: string
-        permissions: User.Permission[]
+    export type Ret = {
+        message_id: string
+    }
+    export type Type = 'private' | 'channel'
+}
+export namespace Message {
+    export type Extra = {
+        type: number
+        guild_id: string
+        channel_name?: string
+        mention: string[]
+        mention_all: boolean
+        mention_roles: string[]
+        mention_here: boolean
+        author: User.Info
+        attachments?: AttachmentInfo
+        kmarkdown?: MarkdownInfo
+    }
+    export type MarkdownInfo = {
+        raw_content: string
+        mention_part: string[]
+        mention_role_part: string[]
+    }
+    export type AttachmentInfo = {
+        type: string
+        url: string
+        name?: string
+        file_type?: string
+        size?: number
+    }
+    export type Payload = {
+        channel_type: ChannelType
+        type: number
+        target_id: string
+        author_id: string
+        content: string
+        msg_id: string
+        msg_timestamp: number
+        nonce?: string
+        extra: Extra
     }
 
-    export type Type = 'private' | 'group' | 'guild'
-    export type SubType = 'direct'|'friend'|'temp'|'normal'
-
-    export function parse(this: QQBot, payload: Dict) {
-        let template = payload.content || ''
-        let result: MessageElem[] = []
-        let brief: string = ''
-        // 1. 处理文字表情混排
-        const regex = /("[^"]*?"|'[^']*?'|`[^`]*?`|“[^”]*?”|‘[^’]*?’|<[^>]+?>)/;
-        if (payload.message_reference) {
-            result.push({
-                type: 'reply',
-                id: payload.message_reference.message_id
-            })
-            brief += `<reply,id=${payload.message_reference.message_id}>`
+    export function convertMessage(content: string, extra: Extra): MessageSegment[] {
+        if(extra.type===1) return [segment.text(content)]
+        if(extra.type===2) return [segment.image(content)]
+        if(extra.type===3) return [segment.video(content)]
+        if(extra.type===4) return [segment.file(content)]
+        if(extra.type===8) return [segment.audio(content)]
+        if(extra.type===10) return JSON.parse(content)
+        const segments: MessageSegment[] = []
+        const pushAtInfo=(atMatch:RegExpExecArray)=>{
+            const idx=content.indexOf(atMatch[0])
+            segments.push(segment.markdown(content.slice(0,idx)))
+            segments.push(segment.at(atMatch[1]))
+            content=content.slice(idx+atMatch[0].length)
         }
-        while (template.length) {
-            const [match] = template.match(regex) || [];
-            if (!match) break;
-            const index = template.indexOf(match);
-            const prevText = template.slice(0, index);
-            if (prevText) {
-                result.push({
-                    type: 'text',
-                    text: prevText
-                })
-                brief += prevText
+        while (content.length) {
+            const atMatch=/\(met\)(\d+|here|all)\(met\)/.exec(content)
+            if(atMatch) pushAtInfo(atMatch)
+            else break;
+        }
+        if (content.length) segments.push(segment.markdown(content))
+        return segments
+    }
+    export async function processMessage(this:Client,message:Sendable){
+        if(!Array.isArray(message)) message=[message]
+        let result:string=''
+        for(const seg of message){
+            if(typeof seg==='string') {
+                result+=seg
+                continue
             }
-            template = template.slice(index + match.length);
-            if (match.startsWith('<')) {
-                let [type, ...attrs] = match.slice(1, -1).split(',');
-                if (type.startsWith('faceType')) {
-                    type = 'face'
-                    attrs = attrs.map((attr: string) => attr.replace('faceId', 'id'))
-                } else if (type.startsWith('@')) {
-                    if (type.startsWith('@!')) {
-                        const id = type.slice(2)
-                        type = 'at'
-                        attrs = Object.entries(payload.mentions.find((u: Dict) => u.id === id) || {})
-                            .map(([key, value]) => `${key === 'id' ? 'user_id' : key}=${value}`)
-                    } else if (type === '@everyone') {
-                        type = 'at'
-                        attrs = ['user_id=all']
-                    }
-                } else if (/^[a-z]+:[0-9]+$/.test(type)) {
-                    attrs = ['id=' + type.split(':')[1]]
-                    type = 'face'
-                }
-                if ([
-                    'text',
-                    'face',
-                    'at',
-                    'image',
-                    'video',
-                    'audio',
-                    'markdown',
-                    'button',
-                    'link',
-                    'reply',
-                    'ark',
-                    'embed'
-                ].includes(type)) {
-                    result.push({
-                        type,
-                        ...Object.fromEntries(attrs.map((attr: string) => {
-                            const [key, ...values] = attr.split('=')
-                            return [key.toLowerCase(), trimQuote(values.join('='))]
-                        }))
-                    })
-                    brief += `<${type},${attrs.join(',')}>`
-                } else {
-                    result.push({
-                        type: 'text',
-                        text: match
-                    })
-                }
-            } else {
-                result.push({
-                    type: "text",
-                    text: match
-                });
-                brief += match;
+            switch (seg.type){
+                case "text":
+                    result+=seg.text
+                    break;
+                case "at":
+                    result+=`(met)${seg.user_id}(${seg})`
+                    break;
+                case "audio":
+                    result+=`<audio src="${await this.uploadMedia(seg.url)}">`
+                    break;
+                case "video":
+                    result+=`<video src="${await this.uploadMedia(seg.url)}"></video>`
+                    break
+                case "file":
+                    throw new Error(`can't send file`)
+                case "card":
+                    throw new Error(`暂未支持`)
+                case "image":
+                    result+=`![${seg.title||''}](${await this.uploadMedia(seg.url)})`
+                    break
+                case "markdown":
+                    result+=seg.text
+                    break;
+                case "reply":
+                    result=`(reply)${seg.id}(reply)`+result
             }
         }
-        if (template) {
-            result.push({
-                type: 'text',
-                text: template
-            })
-            brief += template
-        }
-        // 2. 将附件添加到消息中
-        if (payload.attachments) {
-            for (const attachment of payload.attachments) {
-                let {content_type, ...data} = attachment
-                const [type] = content_type.split('/')
-                if (!data.url.startsWith('http'))
-                    data.url = `https://${data.url}`
-                if (data.filename) {
-                    data.name = data.filename
-                    delete data.filename
-                }
-                result.push({
-                    type,
-                    ...data,
-                })
-                brief += `<${type},${Object.entries(data).map(([key, value]) => `${key}=${value}`).join(',')}>`
-            }
-        }
-        delete payload.attachments
-        delete payload.mentions
-        return [result, brief]
+        return result
     }
 }
 

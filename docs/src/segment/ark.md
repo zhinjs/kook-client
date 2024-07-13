@@ -15,4 +15,4 @@ layout: doc
 | template_id | number                      |
 | kv          | {key:string,value:string}[] |
 
-more: 见官方 [Ark](https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/type/ark.html#%E5%8F%91%E9%80%81%E6%96%B9%E5%BC%8F)
+more: 见官方 [Ark](https://client.q.qq.com/wiki/develop/api-v2/server-inter/message/type/ark.html#%E5%8F%91%E9%80%81%E6%96%B9%E5%BC%8F)
