@@ -1,29 +1,109 @@
-import {ChannelType, UnsupportedMethodError} from "@/constans";
+import {ChannelType} from "@/constans";
 import {Contact} from "@/entries/contact";
 import {Client, Message, Quotable, Sendable} from "@";
+import {User} from "@/entries/user";
+import {ChannelMessageEvent} from "@/event";
 export class Channel extends Contact{
     constructor(c:Client,public info:Channel.Info) {
         super(c);
     }
-
-    async sendMsg(message: Sendable, quote?: Quotable): Promise<Message.Ret> {
-        let content=await Message.processMessage.call(this.c,message)
-        const replyExec=/^\(reply\)([^(]+)\(reply\)/.exec(content)
-        if(!quote && replyExec){
-            quote={
-                message_id:replyExec[1]
+    async update(newInfo:Omit<Channel.Info, 'id'>){
+        const {data}=await this.c.request.post('/v3/channel/update',{
+            channel_id:this.info.id,
+            ...newInfo
+        })
+        // 更新缓存
+        this.c.channels.set(this.info.id,data)
+        Channel.map.delete(this.info)
+        Channel.map.set(data,this)
+        this.info=data
+    }
+    async getMsg(message_id: string): Promise<Message> {
+        const {data}=await this.c.request.get('/v3/message/view',{
+            params:{
+                msg_id:message_id
             }
-            content=content.replace(replyExec[0],'')
-        }
+        })
+        return ChannelMessageEvent.fromDetail(this.c,this.info.id,data)
+    }
+
+    async delete(){
+        const result=await this.c.request.post('/v3/channel/delete',{
+            channel_id:this.info.id
+        })
+        if(result['code']!==0) throw new Error(result['message'])
+        // 清空本地缓存
+        this.c.channels.delete(this.info.id)
+        this.c.channelMembers.delete(this.info.id)
+        Channel.map.delete(this.info)
+    }
+
+    /**
+     * 获取指定消息之前的聊天历史
+     * @param message_id {string} 消息id 不传则查询最新消息
+     * @param len {number} 获取的聊天历史长度 默认50条
+     */
+    async getChatHistory(message_id?:string,len:number=50){
+        const result= await this.c.request.post('/v3/message/list',{
+            target_id:this.info.id,
+            msg_id:message_id,
+            page_size:len
+        })
+        return (result?.data?.items||[]).map((item:Message.Detail)=>{
+            return ChannelMessageEvent.fromDetail(this.c,this.info.id,item)
+        })
+    }
+    async sendMsg(message: Sendable, quote?: Quotable): Promise<Message.Ret> {
+        let isCard:boolean;
+        [message,quote,isCard]=await Message.processMessage.call(this.c,message,quote)
         const {data}=await this.c.request.post('/v3/message/create',{
             target_id:this.info.id,
-            content,
-            type:9,
-            quote:quote&& quote.message_id
+            content:message,
+            type:isCard?10:9,
+            quote:quote?.message_id
         })
         if(!data) throw new Error('发送消息失败')
         this.c.logger.info(`send to Channel(${this.info.id}): `,message)
         return data
+    }
+
+    async recallMsg(message_id: string): Promise<boolean> {
+        const result=await this.c.request.post('/v3/message/delete',{
+            msg_id:message_id
+        })
+        return result['code']===0
+    }
+
+    async updateMsg(message_id: string, newMessage: Sendable,quote?:Quotable): Promise<boolean> {
+        [newMessage,quote]=await Message.processMessage.call(this.c,newMessage,quote)
+        const result=await this.c.request.post('/v3/message/update',{
+            msg_id:message_id,
+            content:newMessage,
+            quote:quote?.message_id
+        })
+        return result['code']===0
+    }
+    async getMsgReactions(message_id:string,emoji?:string):Promise<User.Info[]>{
+        const result=await this.c.request.get('/v3/message/reaction-list',{
+            params:{
+                msg_id:message_id,
+                emoji:emoji?encodeURI(emoji):null
+            }
+        })
+        return result.data
+    }
+    async addMsgReaction(message_id:string,emoji:string){
+        await this.c.request.post('/v3/message/add-reaction',{
+            msg_id:message_id,
+            emoji
+        })
+    }
+    async deleteMsgReaction(message_id:string,emoji:string,user_id?:string){
+        await this.c.request.post('/v3/message/delete-reaction',{
+            msg_id:message_id,
+            emoji,
+            user_id
+        })
     }
 }
 export namespace Channel {

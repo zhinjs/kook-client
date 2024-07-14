@@ -10,7 +10,7 @@ export enum OpCode {
 
 export const UnsupportedMethodError = new Error('暂未支持')
 export enum ChannelType{
-    Group='GROUP',
+    Channel='GROUP',
     Private='PERSON',
     Notice='BROADCAST'
 }

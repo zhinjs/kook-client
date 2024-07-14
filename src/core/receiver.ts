@@ -1,6 +1,6 @@
 import {EventEmitter} from "events";
 import {createDecipheriv} from 'crypto'
-import {BaseClient, Client, genGroupId, parseGroupId} from "@";
+import {BaseClient, Client} from "@";
 import {ChannelType, OpCode} from "@/constans";
 import {ChannelMessageEvent, PrivateMessageEvent} from "@/event";
 export abstract class Receiver extends EventEmitter{
@@ -13,8 +13,8 @@ export abstract class Receiver extends EventEmitter{
     }
     #transformEvent(event:Receiver.EventPacket['d']){
         switch (event.channel_type){
-            case ChannelType.Group:
-                return this.#transformGroupEvent(event)
+            case ChannelType.Channel:
+                return this.#transformChannelEvent(event)
             case ChannelType.Private:
                 return this.#transformPrivateEvent(event)
             case ChannelType.Notice:
@@ -23,7 +23,7 @@ export abstract class Receiver extends EventEmitter{
                 throw new Error(`unknown channel type ${event.channel_type}`)
         }
     }
-    #transformGroupEvent(event:Receiver.EventPacket['d']){
+    #transformChannelEvent(event:Receiver.EventPacket['d']){
         if(event.type===255) return this.#transformNoticeEvent(event)
         if(event.extra?.author?.bot && this.c.config.ignore==='bot') return
         if(event.author_id===this.c.self_id && this.c.config.ignore==='self') return

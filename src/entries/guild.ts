@@ -1,12 +1,55 @@
 import {Contact} from "@/entries/contact";
 import {Client, Message, Quotable, Sendable} from "@";
 import {NotifyType, UnsupportedMethodError} from "@/constans";
+import {Channel} from "@/entries/channel";
 
 export class Guild extends Contact{
     constructor(c:Client,public info:Guild.Info) {
         super(c);
     }
+    async renew(){
+        const {data}=await this.c.request.get('/v3/guild/view',{
+            params:{
+                guild_id:this.info.id
+            }
+        })
+        this.info=data
+    }
+    async quit(){
+        const result=await this.c.request.post('/v3/guild/leave',{
+            guild_id:this.info.id
+        })
+        if(result['code']===0) return this.c.guilds.delete(this.info.id)
+        throw new Error(result['message'])
+    }
+    async kick(user_id:string){
+        const result=await this.c.request.post('/v3/guild/kickout',{
+            guild_id:this.info.id,
+            target_id:user_id
+        })
+        if(result['code']===0) return true
+        throw new Error(result['message'])
+    }
+    async createChannel(channel_info:Omit<Channel.Info,'id'>):Promise<Channel.Info>{
+        const {data} = await this.c.request.post('/v3/channel/create',{
+            guild_id:this.info.id,
+            ...channel_info
+        })
+        return data
+    }
     async sendMsg(message: Sendable, quote?: Quotable): Promise<Message.Ret> {
+        throw UnsupportedMethodError
+    }
+
+    recallMsg(message_id: string): Promise<boolean> {
+        throw UnsupportedMethodError
+    }
+
+    updateMsg(message_id: string, newMessage: Sendable): Promise<boolean> {
+        throw UnsupportedMethodError
+    }
+
+    getMsg(message_id: string): Promise<Message> {
         throw UnsupportedMethodError
     }
 }

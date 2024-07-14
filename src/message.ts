@@ -1,11 +1,11 @@
-import {MessageSegment, segment, Sendable} from "@/elements";
+import {MessageSegment, Quotable, segment, Sendable} from "@/elements";
 import {BaseClient} from "@/core/baseClient";
 import {Client} from "./client";
 import {User} from "@/entries/user";
 import {ChannelType, UnsupportedMethodError} from "@/constans";
+import {Role} from "@/entries/role";
 
 export abstract class Message {
-    guild_id: string
     message_type: Message.Type
     timestamp: number
 
@@ -21,10 +21,14 @@ export abstract class Message {
         this.raw_message = payload.content
         this.timestamp = payload.msg_timestamp
         this.message_id = payload.msg_id
-        this.guild_id = payload.extra.guild_id
         this.message = Message.convertMessage(payload.content, payload.extra)
-        console.log(this.message)
     }
+    abstract recall():Promise<boolean>
+    abstract update(message:Sendable):Promise<boolean>
+    abstract reply(message:Sendable,quote?:boolean):Promise<Message.Ret>
+    abstract getReactions(emoji?:string):Promise<User.Info[]>
+    abstract addReaction(emoji:string):Promise<void>
+    abstract deleteReaction(emoji:string,user_id?:string):Promise<void>
 
     get author() {
         return this.client.pickUser(this.author_id)
@@ -60,13 +64,18 @@ export namespace Message {
 export namespace Message {
     export type Extra = {
         type: number
-        guild_id: string
+        guild_id?: string
         channel_name?: string
         mention: string[]
         mention_all: boolean
         mention_roles: string[]
         mention_here: boolean
         author: User.Info
+        quote?:Detail
+        mention_info?:{
+            mention_part:User.Info[]
+            mention_role_part:Role.Info[]
+        }
         attachments?: AttachmentInfo
         kmarkdown?: MarkdownInfo
     }
@@ -93,7 +102,33 @@ export namespace Message {
         nonce?: string
         extra: Extra
     }
-
+    export interface Detail extends Extra{
+        id:string
+        type:number
+        content:string
+        embeds:Embed[]
+        create_at:number
+        update_at:number
+        reactions:ReactionInfo[]
+    }
+    export type ReactionInfo={
+        emoji:{
+            id:string
+            name:string
+        }
+        count:number
+        me:boolean
+    }
+    export type Embed={
+        type:string
+        url:string
+        origin_or:string
+        av_no:string
+        iframe_path:string
+        duration:number
+        title:string
+        pic:string
+    }
     export function convertMessage(content: string, extra: Extra): MessageSegment[] {
         if(extra.type===1) return [segment.text(content)]
         if(extra.type===2) return [segment.image(content)]
@@ -116,9 +151,9 @@ export namespace Message {
         if (content.length) segments.push(segment.markdown(content))
         return segments
     }
-    export async function processMessage(this:Client,message:Sendable){
+    export async function processMessage(this:Client,message:Sendable,quote?:Quotable):Promise<[string,Quotable?,boolean?]>{
         if(!Array.isArray(message)) message=[message]
-        let result:string=''
+        let result:string='',isCard:boolean=false
         for(const seg of message){
             if(typeof seg==='string') {
                 result+=seg
@@ -140,7 +175,9 @@ export namespace Message {
                 case "file":
                     throw new Error(`can't send file`)
                 case "card":
-                    throw new Error(`暂未支持`)
+                    result=JSON.stringify([seg])
+                    isCard=true
+                    break;
                 case "image":
                     result+=`![${seg.title||''}](${await this.uploadMedia(seg.url)})`
                     break
@@ -148,10 +185,14 @@ export namespace Message {
                     result+=seg.text
                     break;
                 case "reply":
-                    result=`(reply)${seg.id}(reply)`+result
+                    if(quote) break
+                    quote={
+                        message_id:seg.id
+                    }
+                    break;
             }
         }
-        return result
+        return [result,quote,isCard]
     }
 }
 
