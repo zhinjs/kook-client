@@ -31,7 +31,7 @@ const client = new Client({
 	// ...
 })
 // 只有启动后，才能发送
-client.start().then(() => {
+client.connect().then(() => {
 	// 频道被动回复
 	client.on('message.channel', (e) => {
 		e.reply('hello world')
