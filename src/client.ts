@@ -7,8 +7,10 @@ import {ChannelMember} from "@/entries/channelMember";
 import {EventMap} from "@/event";
 import {Quotable, Sendable} from "@/elements";
 type MemberMap=Map<string,User.Info>
+type BlackMap=Map<string,Guild.BlackInfo>
 export class Client extends BaseClient {
     guilds:Map<string,Guild.Info>=new Map<string, Guild.Info>()
+    blacklist:Map<string,BlackMap>=new Map<string, BlackMap>()
     channels:Map<string,Channel.Info>=new Map<string, Channel.Info>()
     guildMembers:Map<string,MemberMap>=new Map<string, MemberMap>()
     channelMembers:Map<string,MemberMap>=new Map<string, MemberMap>()
@@ -28,7 +30,21 @@ export class Client extends BaseClient {
             this.logger.debug(e.stack)
         })
     }
-
+    get black_user_nums(){
+        return [...this.blacklist.values()].reduce((a,b)=>a+b.size,0)
+    }
+    async setOnline(){
+        const result = await this.request.post('/v3/user/online')
+        return result['code']===0
+    }
+    async setOffline(){
+        const result = await this.request.post('/v3/user/offline')
+        return result['code']===0
+    }
+    async getOnlineStatus():Promise<{online:boolean,online_os:string[]}>{
+        const {data}=await this.request.get('/v3/user/get-online-status')
+        return data
+    }
     /**
      * 获取频道列表
      */
@@ -48,7 +64,14 @@ export class Client extends BaseClient {
         }
         return await _getGuildList() as Guild.Info[]
     }
-
+    async getBlacklist(guild_id:string):Promise<Guild.BlackInfo[]>{
+        const {data:{items}}=await this.request.get('/v3/blacklist/list',{
+            params:{
+                guild_id
+            }
+        })
+        return items
+    }
     /**
      * 获取频道信息
      * @param guild_id
@@ -108,6 +131,24 @@ export class Client extends BaseClient {
     async sendChannelMsg(channel_id:string,message:Sendable,quote?:Quotable){
         return this.pickChannel(channel_id).sendMsg(message,quote)
     }
+    async getPrivateMsg(user_id:string,message_id:string){
+        return this.pickUser(user_id).getMsg(message_id)
+    }
+    async getChannelMsg(channel_id:string,message_id:string){
+        return this.pickChannel(channel_id).getMsg(message_id)
+    }
+    async recallPrivateMsg(user_id:string,message_id:string){
+        return this.pickUser(user_id).recallMsg(message_id)
+    }
+    async recallChannelMsg(channel_id:string,message_is:string){
+        return this.pickChannel(channel_id).recallMsg(message_is)
+    }
+    async getPrivateChatHistory(user_id:string,message_id?:string,len:number=50){
+        return this.pickUser(user_id).getChatHistory(message_id,len)
+    }
+    async getChannelChatHistory(channel_id:string,message_id?:string,len:number=50){
+        return this.pickChannel(channel_id).getChatHistory(message_id,len)
+    }
     async #initChannels(guild_id:string){
         const channels = await this.getChannelList(guild_id)
         for(const channel of channels){
@@ -129,6 +170,13 @@ export class Client extends BaseClient {
             this.users.set(user.id,user)
         }
     }
+    async #initBlacklist(guild_id:string){
+        this.blacklist.set(guild_id,new Map<string, Guild.BlackInfo>())
+        const blacklist = await this.getBlacklist(guild_id)
+        for(const temp of blacklist){
+            this.blacklist.get(guild_id)?.set(temp.user_id,temp)
+        }
+    }
     async init(){
         const userInfo=await this.getSelfInfo()
         this.self_id=userInfo.id
@@ -136,11 +184,12 @@ export class Client extends BaseClient {
         this.logger.info(`welcome ${this.nickname}, 正在加载资源...`)
         const guilds=await this.getGuildList()
         for(const guildInfo of guilds){
+            this.guilds.set(guildInfo.id,guildInfo)
             await this.#initChannels(guildInfo.id)
             await this.#initUsers(guildInfo.id)
-            this.guilds.set(guildInfo.id,guildInfo)
+            await this.#initBlacklist(guildInfo.id)
         }
-        this.logger.info(`加载了${this.guilds.size}个服务器，共计${this.channels.size}个频道,${this.users.size}个用户`)
+        this.logger.info(`加载了${this.guilds.size}个服务器，共计${this.channels.size}个频道,${this.users.size}个用户,${this.blacklist.size}个黑名单用户`)
     }
     async connect() {
         await this.receiver.connect()

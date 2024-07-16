@@ -18,15 +18,6 @@ export class Channel extends Contact{
         Channel.map.set(data,this)
         this.info=data
     }
-    async getMsg(message_id: string): Promise<Message> {
-        const {data}=await this.c.request.get('/v3/message/view',{
-            params:{
-                msg_id:message_id
-            }
-        })
-        return ChannelMessageEvent.fromDetail(this.c,this.info.id,data)
-    }
-
     async delete(){
         const result=await this.c.request.post('/v3/channel/delete',{
             channel_id:this.info.id
@@ -37,13 +28,36 @@ export class Channel extends Contact{
         this.c.channelMembers.delete(this.info.id)
         Channel.map.delete(this.info)
     }
+    async addUsers(user_ids:string[]){
+        const result=await this.c.request.post('/v3/channel/move-user',{
+            channel_id:this.info.id,
+            user_ids
+        })
+        return result['code']===0
+    }
+    async getMsg(message_id: string): Promise<Message> {
+        const {data}=await this.c.request.get('/v3/message/view',{
+            params:{
+                msg_id:message_id
+            }
+        })
+        return ChannelMessageEvent.fromDetail(this.c,this.info.id,data)
+    }
+    async getUserList():Promise<User.Info[]>{
+        const {data}=await this.c.request.get('/v3/channel/user-list',{
+            params:{
+                channel_id:this.info.id
+            }
+        })
+        return data
+    }
 
     /**
      * 获取指定消息之前的聊天历史
      * @param message_id {string} 消息id 不传则查询最新消息
      * @param len {number} 获取的聊天历史长度 默认50条
      */
-    async getChatHistory(message_id?:string,len:number=50){
+    async getChatHistory(message_id?:string,len:number=50):Promise<Message[]>{
         const result= await this.c.request.post('/v3/message/list',{
             target_id:this.info.id,
             msg_id:message_id,

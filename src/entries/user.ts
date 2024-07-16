@@ -62,7 +62,7 @@ export class User extends Contact{
      * @param message_id {string} 消息id 不传则查询最新消息
      * @param len {number} 获取的聊天历史长度 默认50条
      */
-    async getChatHistory(message_id?:string,len:number=50){
+    async getChatHistory(message_id?:string,len:number=50):Promise<Message[]>{
         const result= await this.c.request.post('/v3/direct-message/list',{
             target_id:this.info.id,
             msg_id:message_id,

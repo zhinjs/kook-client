@@ -5,6 +5,12 @@ export class ChannelMember extends User{
     constructor(c:Client,public channel_id:string,info:User.Info) {
         super(c,info);
     }
+    get channel(){
+        return this.c.pickChannel(this.channel_id)
+    }
+    async move(channel_id:string){
+        return this.channel.addUsers([this.info.id])
+    }
 }
 export namespace ChannelMember{
     export const map:WeakMap<User.Info,ChannelMember>=new WeakMap<User.Info, ChannelMember>()

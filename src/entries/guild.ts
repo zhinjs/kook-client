@@ -2,6 +2,8 @@ import {Contact} from "@/entries/contact";
 import {Client, Message, Quotable, Sendable} from "@";
 import {NotifyType, UnsupportedMethodError} from "@/constans";
 import {Channel} from "@/entries/channel";
+import {Role} from "@/entries/role";
+import {User} from "@/entries/user";
 
 export class Guild extends Contact{
     constructor(c:Client,public info:Guild.Info) {
@@ -20,6 +22,42 @@ export class Guild extends Contact{
             guild_id:this.info.id
         })
         if(result['code']===0) return this.c.guilds.delete(this.info.id)
+        throw new Error(result['message'])
+    }
+    async getRoleList():Promise<Role.Info[]>{
+        const _getRoleList=async (page:number=1,page_size=100)=>{
+            const {data:{items=[],meta={page:1,total_page:1}}}=await this.c.request.get('/v3/guild-role/list',{
+                params:{
+                    guild_id:this.info.id,
+                    page
+                }
+            })
+            if(meta.total_page<=page) return items
+            return items.concat(await _getRoleList(page+1,page_size))
+        }
+        return await _getRoleList()
+    }
+    async createRole(name:string):Promise<Role.Info>{
+        const {data}=await this.c.request.post('/v3/guild-role/create',{
+            guild_id:this.info.id,
+            name
+        })
+        return data
+    }
+    async updateRole(role_id:string,modifyInfo:Partial<Omit<Role.Info, 'id'>>){
+        const {data}=await this.c.request.post('/v3/guild-role/update',{
+            guild_id:this.info.id,
+            role_id,
+            ...modifyInfo
+        })
+        return data
+    }
+    async deleteRole(role_id:string){
+        const result=await this.c.request.post('/v3/guild-role/delete',{
+            guild_id:this.info.id,
+            role_id
+        })
+        if(result['code']===0) return true
         throw new Error(result['message'])
     }
     async kick(user_id:string){
@@ -130,5 +168,11 @@ export namespace Guild {
         hoist: boolean
         number: number
         member_limit: number
+    }
+    export interface BlackInfo{
+        user_id:string
+        created_time:number
+        remark:string
+        user:User.Info
     }
 }
