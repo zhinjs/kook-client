@@ -11,6 +11,10 @@ export abstract class Receiver extends EventEmitter{
         super();
         this.on("event",this.#transformEvent.bind(this))
     }
+    reset() {
+        this.sn = 0;
+        this.buffer = [];
+    }
     #transformEvent(event:Receiver.EventPacket['d']){
         switch (event.channel_type){
             case ChannelType.Channel:

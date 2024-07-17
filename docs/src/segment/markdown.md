@@ -11,6 +11,4 @@ layout: doc
 | 属性名                | 属性值                         |
 |--------------------|-----------------------------|
 | type               | markdown                    |
-| content            | string                      |
-| custom_template_id | string                      |
-| params             | {key:string,value:string}[] |
+| text               | string                      |

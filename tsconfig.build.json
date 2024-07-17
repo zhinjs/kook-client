@@ -4,5 +4,8 @@
     "composite": false,
     "outDir": "lib",
     "declaration": false
-  }
+  },
+  "exclude": [
+    "src/test.ts"
+  ]
 }

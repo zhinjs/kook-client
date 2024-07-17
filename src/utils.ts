@@ -2,6 +2,7 @@ import {BinaryLike, createHash, createCipheriv, createDecipheriv} from "crypto";
 import * as fs from 'fs'
 import axios from 'axios'
 import {Stream} from "node:stream";
+import { fileTypeFromFile } from 'file-type';
 
 export const toObject = <T = any>(data: any) => {
     if (Buffer.isBuffer(data)) return JSON.parse(data.toString()) as T;
@@ -52,7 +53,17 @@ export async function getFile(file:string|Buffer):Promise<Buffer|Stream>{
     if (Buffer.isBuffer(file)) return file
     if(file.match(/^https?:\/\//)) return createRemoteFileStream(file)
     if(file.match(/^base64:\/\//)) return Buffer.from(file.replace('^base64://',''),'base64')
-    if(file.match(/^file:\/\/.+/)) return createLocalFileStream(file)
+    if (typeof file === 'string') {
+        const isLocalFile = (
+            file.startsWith('file://') ||
+            (!file.includes('://') && fs.existsSync(file))
+        );
+
+        if (isLocalFile) {
+            const cleanPath = file.replace(/^file:\/\//, '');
+            return createLocalFileStream(cleanPath);
+        }
+    }
     if(file.match(/^data:.*;base64,.*$/)) return Buffer.from(file.replace(/^data:.*;base64,/,''),'base64')
     try{
         return Buffer.from(file)

@@ -9,4 +9,4 @@ layout: doc
 | 属性名  | 属性值    |
 |------|--------|
 | type | face   |
-| id   | number |
+| id   | string |

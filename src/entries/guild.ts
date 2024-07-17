@@ -2,7 +2,6 @@ import {Contact} from "@/entries/contact";
 import {Client, Message, Quotable, Sendable} from "@";
 import {NotifyType, UnsupportedMethodError} from "@/constans";
 import {Channel} from "@/entries/channel";
-import {Role} from "@/entries/role";
 import {User} from "@/entries/user";
 
 export class Guild extends Contact{
@@ -24,7 +23,7 @@ export class Guild extends Contact{
         if(result['code']===0) return this.c.guilds.delete(this.info.id)
         throw new Error(result['message'])
     }
-    async getRoleList():Promise<Role.Info[]>{
+    async getRoleList():Promise<Guild.Role[]>{
         const _getRoleList=async (page:number=1,page_size=100)=>{
             const {data:{items=[],meta={page:1,total_page:1}}}=await this.c.request.get('/v3/guild-role/list',{
                 params:{
@@ -37,18 +36,18 @@ export class Guild extends Contact{
         }
         return await _getRoleList()
     }
-    async createRole(name:string):Promise<Role.Info>{
+    async createRole(name:string):Promise<Guild.Role>{
         const {data}=await this.c.request.post('/v3/guild-role/create',{
             guild_id:this.info.id,
             name
         })
         return data
     }
-    async updateRole(role_id:string,modifyInfo:Partial<Omit<Role.Info, 'id'>>){
+    async updateRole(role_id:string,update_info:Partial<Omit<Guild.Role, 'id'>>):Promise<Guild.Role>{
         const {data}=await this.c.request.post('/v3/guild-role/update',{
             guild_id:this.info.id,
             role_id,
-            ...modifyInfo
+            ...update_info
         })
         return data
     }
@@ -156,18 +155,45 @@ export namespace Guild {
         level?:number
     }
 
-    export type ApiInfo = Omit<Info, 'id' | 'name'> & {
-        guild_id: string
-        guild_name: string
+    export interface Role{
+        role_id:number
+        name:string
+        color:number
+        position:number
+        hoist:number
+        mentionable:number
+        permissions:number
     }
 
-    export interface Role {
-        id: string
-        name: string
-        color: string
-        hoist: boolean
-        number: number
-        member_limit: number
+    export enum Permission{
+        Admin=1,
+        ManageGuild,
+        ViewAdminLog=4,
+        CreateGuildInvite=8,
+        ManageInvite=16,
+        ManageChannel=32,
+        KickUser=64,
+        BanUser=128,
+        ManageCustomFace=256,
+        UpdateGuildName=512,
+        ManageRole=1024,
+        ViewContentOrVoiceChannel=2048,
+        PublishMsg=4096,
+        ManageMsg=8192,
+        UploadFile=16384,
+        VoiceLink=32768,
+        ManageVoice=65536,
+        AtAll=131072,
+        AddReaction=262144,
+        FollowReaction=524288,
+        PassiveLinkVoiceChannel=1048576,
+        PressKeyTalk=2097152,
+        FreeTally=4194304,
+        Talk=8388608,
+        MuteGuild=16777216,
+        CloseGuildWheat=33554432,
+        UpdateOtherUserNickname=67108864,
+        PlayMusic=134217728,
     }
     export interface BlackInfo{
         user_id:string
