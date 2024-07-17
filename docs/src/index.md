@@ -3,14 +3,14 @@ layout: home
 
 hero:
   name: kook-client
-  text: 基于NodeJS的qq官方机器人开发SDK
+  text: 基于NodeJS的 KOOK 机器人开发SDK
   actions:
     - theme: brand
       text: 快速开始
       link: /guide/start
     - theme: alt
       text: View on GitHub
-      link: https://github.com/lc-cn/kook-client
+      link: https://github.com/zhinjs/kook-client
 features:
   - title: 上手简单
     details: 方法使用参考icqq设计，更容易上手

@@ -21,24 +21,14 @@ npm install kook-client
 const {Client} = require('kook-client');
 
 const client = new Client({
-	// 在这里配置你的 QQ 机器人的appid和secret等信息
-    appid: '你的 appid',
-    secret: '你的 secret',
-    intents:[ // 监听事件类型
-        // 'GROUP_AT_MESSAGE_CREATE', // 群聊@消息事件 没有群权限请注释
-	    'C2C_MESSAGE_CREATE', // 私聊事件 没有私聊权限请注释
-	    'GUILD_MESSAGES', // 私域机器人频道消息事件 公域机器人请注释
-	    'PUBLIC_GUILD_MESSAGES', // 公域机器人频道消息事件 私域机器人请注释
-	    'DIRECT_MESSAGE', // 频道私信事件
-	    'GUILD_MESSAGE_REACTIONS', // 频道消息表态事件
-	    'GUILDS', // 频道变更事件
-	    'GUILD_MEMBERS', // 频道成员变更事件
-	    'DIRECT_MESSAGE', // 频道私信事件
-    ]
+	// 在这里配置你的 机器人的token和连接模式等信息
+	ignore:'bot',
+	token:'你的机器人token',
+	mode:'websocket'
 });
 
 // 监听消息事件
-client.on('message', (event) => {
+client.on('message.channel', (event) => {
 	// 在这里处理消息
 	console.log('收到消息:', event.message);
 	// 回复消息
@@ -46,10 +36,10 @@ client.on('message', (event) => {
 });
 
 // 启动机器人
-client.start();
+client.connect();
 ```
 
-- 注意：在配置中，你需要填写你的 `appid`和 `secret`。请确保妥善保管你的账号信息，并遵循相关使用条款和隐私政策。
+- 注意：在配置中，你需要填写你的 `token`和 `mode`。请确保妥善保管token信息，并遵循相关使用条款和隐私政策。
 - 示例中的配置仅为基础配置，更多配置信息请查看 [配置项](../config.md) 章节
 
 

@@ -33,6 +33,10 @@ export class Client extends BaseClient {
     get black_user_nums(){
         return [...this.blacklist.values()].reduce((a,b)=>a+b.size,0)
     }
+    async getSelfInfo():Promise<User.Info>{
+        const {data}=await this.request.get('/v3/user/me')
+        return data
+    }
     async setOnline(){
         const result = await this.request.post('/v3/user/online')
         return result['code']===0
@@ -64,28 +68,15 @@ export class Client extends BaseClient {
         }
         return await _getGuildList() as Guild.Info[]
     }
-    async getBlacklist(guild_id:string):Promise<Guild.BlackInfo[]>{
-        const {data:{items}}=await this.request.get('/v3/blacklist/list',{
-            params:{
-                guild_id
-            }
-        })
-        return items
-    }
     /**
      * 获取频道信息
      * @param guild_id
      */
-    async getGuildInfo(guild_id:string):Promise<Guild.ApiInfo>{
-        const {data: {id: _, name: guild_name, joined_at, ...guild}}=await this.request.get(`/v3/guild/view`,{
+    async getGuildInfo(guild_id:string):Promise<Guild.Info>{
+        const {data}=await this.request.get(`/v3/guild/view`,{
             params:{guild_id}
         })
-        return {
-            guild_id,
-            guild_name,
-            join_time: new Date(joined_at).getTime() / 1000,
-            ...guild
-        }
+        return data
     }
     async getChannelList(guild_id:string):Promise<Channel.Info[]>{
         const _getChannelList = async (page=1,page_size=100) => {
@@ -124,6 +115,14 @@ export class Client extends BaseClient {
             return [...result, ...await _getGuildMemberList(page+1)]
         }
         return await _getGuildMemberList()
+    }
+    async getBlacklist(guild_id:string):Promise<Guild.BlackInfo[]>{
+        const {data:{items}}=await this.request.get('/v3/blacklist/list',{
+            params:{
+                guild_id
+            }
+        })
+        return items
     }
     async sendPrivateMsg(user_id:string,message:Sendable,quote?:Quotable){
         return this.pickUser(user_id).sendMsg(message,quote)

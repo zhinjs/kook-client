@@ -59,10 +59,6 @@ export class BaseClient extends EventEmitter {
         this.logger.info(`using ${config.mode} mode`)
     }
 
-    async getSelfInfo():Promise<User.Info>{
-        const {data}=await this.request.get('/v3/user/me')
-        return data
-    }
 
     /**
      * 上传多媒体文件

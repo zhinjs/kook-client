@@ -14,20 +14,37 @@ export default defineConfig({
             }
         },
         editLink: {
-          pattern: 'https://github.com/lc-cn/kook-client/edit/main/docs/src/:path',
+          pattern: 'https://github.com/zhinjs/kook-client/edit/main/docs/src/:path',
           text: '修改'
         },
         nav: [
             { text: '开始', link: '/guide/start', activeMatch: '/guide/' },
             { text: '配置', link: '/config', activeMatch: '/config' },
             {
-                text: 'API',
-                activeMatch: '/api/',
+                text: '模块',
+                activeMatch: '/module/',
                 items: [
-                    { text: '服务器', link: '/api/guild' },
-                    { text: '频道', link: '/api/channel' },
-                    { text: '私聊', link: '/api/private' },
+                    { text: '客户端(Client)', link: '/module/client' },
+                    { text: '服务器(Guild)', link: '/module/guild' },
+                    { text: '角色(Role)', link: '/module/role' },
+                    { text: '频道(Channel)', link: '/module/channel' },
+                    { text: '用户(User)', link: '/module/user' },
                 ]
+            },
+            {
+              text:'消息段',
+              activeMatch:'/segment/',
+              items:[
+                  { text: '文本', link: '/segment/text' },
+                  { text: '表情', link: '/segment/face' },
+                  { text: '图片', link: '/segment/image' },
+                  { text: '音频', link: '/segment/audio' },
+                  { text: '视频', link: '/segment/video' },
+                  { text: '回复', link: '/segment/reply' },
+                  { text: 'At', link: '/segment/at' },
+                  { text: 'Markdown', link: '/segment/markdown' },
+                  { text: '卡片消息', link: '/segment/card' },
+              ]
             },
             {
                 text: '事件',
@@ -37,7 +54,7 @@ export default defineConfig({
                     { text: '频道消息事件', link: '/event/channel' },
                 ]
             },
-            { text: '更新日志', link: 'https://github.com/lc-cn/kook-client/blob/master/CHANGELOG.md', target: '_blank', }
+            { text: '更新日志', link: 'https://github.com/zhinjs/kook-client/blob/master/CHANGELOG.md', target: '_blank', }
         ],
         sidebar: [
             {
@@ -63,16 +80,18 @@ export default defineConfig({
                 ]
             },
             {
-                text: '接口分组',
+                text: '模块定义',
                 items: [
-                    { text: '服务器', link: '/api/guild' },
-                    { text: '频道', link: '/api/channel' },
-                    { text: '私聊', link: '/api/private' },
+                    { text: '客户端(Client)', link: '/module/client' },
+                    { text: '服务器(Guild)', link: '/module/guild' },
+                    { text: '角色(Role)', link: '/module/role' },
+                    { text: '频道(Channel)', link: '/module/channel' },
+                    { text: '用户(User)', link: '/module/user' },
                 ]
             }
         ],
         footer: {
-            message: 'Released under the <a href="https://github.com/lc-cn/kook-client/blob/master/LICENSE">MIT License</a>.',
+            message: 'Released under the <a href="https://github.com/zhinjs/kook-client/blob/master/LICENSE">MIT License</a>.',
             copyright: 'Copyright © 2023-present <a href="https://github.com/lc-cn">lc-cn</a>'
         }
     },

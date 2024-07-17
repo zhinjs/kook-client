@@ -3,7 +3,7 @@ import {BaseClient} from "@/core/baseClient";
 import {Client} from "./client";
 import {User} from "@/entries/user";
 import {ChannelType, UnsupportedMethodError} from "@/constans";
-import {Role} from "@/entries/role";
+import {Guild} from "@/entries/guild";
 
 export abstract class Message {
     message_type: Message.Type
@@ -74,7 +74,7 @@ export namespace Message {
         quote?:Detail
         mention_info?:{
             mention_part:User.Info[]
-            mention_role_part:Role.Info[]
+            mention_role_part:Guild.Role[]
         }
         attachments?: AttachmentInfo
         kmarkdown?: MarkdownInfo
