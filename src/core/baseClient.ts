@@ -1,12 +1,11 @@
 import axios, {AxiosInstance} from "axios";
-import {FormData} from 'formdata-node'
+import FormData from 'form-data';
 import * as log4js from 'log4js'
 import {EventEmitter} from "events";
 import {Dict, LogLevel} from "@/types";
 import {EventMap,ChannelMessageEvent, PrivateMessageEvent} from "@/event";
 import {getFile} from "@/utils";
 import {Receiver} from "@/core/receiver";
-import {User} from "@/entries/user";
 
 export class BaseClient extends EventEmitter {
     request: AxiosInstance
@@ -16,6 +15,7 @@ export class BaseClient extends EventEmitter {
     config:BaseClient.Config
     logger: log4js.Logger
     receiver:Receiver
+    private processedEvents = new Set<string>();
 
     constructor(config:BaseClient.Config ) {
         super()
@@ -37,13 +37,15 @@ export class BaseClient extends EventEmitter {
                     config.url = config.url.replace(':' + key, restObj[key])
                 }
             }
-            if(config.headers['Content-Type']==='multipart/form-data'){
-                delete config.data.message_reference
-                const formData=new FormData()
-                for(const key in config.data)
-                    if (config.data[key] !== undefined)
-                        formData.set(key,config.data[key])
-                config.data=formData
+            if (config.headers['Content-Type'] === 'multipart/form-data') {
+                delete config.data.message_reference;
+                const formData = new FormData(); // 使用 form-data
+                for (const key in config.data) {
+                    if (config.data[key] !== undefined) {
+                        formData.append(key, config.data[key]); // 使用 append 而不是 set
+                    }
+                }
+                config.data = formData;
             }
             return config
         })
@@ -61,21 +63,49 @@ export class BaseClient extends EventEmitter {
 
 
     /**
-     * 上传多媒体文件
-     * @param data 文件数据：可以是本地文件(file://)或网络地址(http://)或base64或Buffer
-     * @returns
-     */
-    async uploadMedia(data: string|Buffer):Promise<string> {
-        const formData=new FormData()
-        formData.append('file',await getFile(data))
-        const {data: result} = await this.request.post(`/v3/asset/create`, formData,{
-            headers: {
-                'Content-Type': 'multipart/form-data'
+ * 上传多媒体文件
+ * @param data 文件数据：可以是本地文件(file://)或网络地址(http://)或base64或Buffer
+ * @returns 返回可直接访问的文件URL
+ */
+    async uploadMedia(data: string | Buffer): Promise<string> {
+        const formData = new FormData();
+        const fileData = await getFile(data);
+        // console.error(await getFile(data));
+        formData.append('file', fileData, 'awa.png'); // 显式指定文件名
+
+        try {
+            const response = await this.request.post(`/v3/asset/create`, formData, {
+                headers: {
+                    ...formData.getHeaders(), // 自动设置 Content-Type
+                    'Accept': 'application/json',
+                },
+            });
+
+            // console.log("fileData结果:", fileData); // 调试日志
+            // console.log("Data结果:", data); // 调试日志
+
+            const url = response.data?.url;
+            if (!url) {
+                throw new Error(`Invalid response: ${JSON.stringify(response.data)}`);
             }
-        })
-        return ''
+            return url;
+        } catch (error) {
+            // console.error("Upload failed:", error.response?.data || error.message);
+            throw new Error(`Upload failed: ${error.message}`);
+        }
     }
     em(event: string, payload: Dict) {
+        // 添加消息去重逻辑 - 放在方法最前面
+        const eventId = payload.msg_id || payload.event_id;
+        if (eventId && this.processedEvents.has(eventId)) {
+            this.logger.debug(`Ignoring duplicate event: ${eventId}`);
+            return;
+        }
+        
+        // 记录已处理事件
+        if (eventId) this.processedEvents.add(eventId);
+        
+        // 原始事件处理逻辑
         const eventNames = event.split('.')
         const [post_type, detail_type, ...sub_type] = eventNames
         Object.assign(payload, {

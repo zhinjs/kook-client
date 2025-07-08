@@ -1,4 +1,4 @@
-import {MessageSegment, Quotable, segment, Sendable} from "@/elements";
+import {MessageSegment, Quotable, segment, Sendable, validateCard} from "@/elements";
 import {BaseClient} from "@/core/baseClient";
 import {Client} from "./client";
 import {User} from "@/entries/user";
@@ -151,48 +151,119 @@ export namespace Message {
         if (content.length) segments.push(segment.markdown(content))
         return segments
     }
-    export async function processMessage(this:Client,message:Sendable,quote?:Quotable):Promise<[string,Quotable?,boolean?]>{
-        if(!Array.isArray(message)) message=[message]
-        let result:string='',isCard:boolean=false
-        for(const seg of message){
-            if(typeof seg==='string') {
-                result+=seg
-                continue
+    export async function processMessage(this: Client, message: Sendable, quote?: Quotable): Promise<[string, Quotable?, number?]> {
+        if (!Array.isArray(message)) message = [message];
+        let result: string = '';
+        let messageType: number = 1; // 默认文本消息类型
+
+
+        for (const seg of message) {
+            if (typeof seg === 'object' && (seg as any).__isCard) {
+                const card = { ...(seg as any) };
+                delete card.__isCard;
+
+                // 递归处理卡片中的所有图片
+                const processImages = async (obj: any) => {
+                    if (Array.isArray(obj)) {
+                        for (const item of obj) {
+                            await processImages(item);
+                        }
+                    } else if (obj && typeof obj === 'object') {
+                        // 处理图片元素
+                        if (obj.type === 'image' && obj.src) {
+                            // 如果是本地文件，自动上传
+                            if (obj.src.startsWith('file://')) {
+                                obj.src = await this.uploadMedia(obj.src);
+                            }
+                            // 如果是base64数据，也上传
+                            else if (obj.src.startsWith('data:image/')) {
+                                obj.src = await this.uploadMedia(obj.src);
+                            }
+                        }
+
+                        // 递归处理子对象
+                        for (const key in obj) {
+                            if (obj[key] && typeof obj[key] === 'object') {
+                                await processImages(obj[key]);
+                            }
+                        }
+                    }
+                };
+
+                await processImages(card);
+
+                validateCard(card);
+                result = JSON.stringify([card]);
+                messageType = 10;
+                break;
             }
-            switch (seg.type){
+            // 处理特殊卡片对象
+            if (typeof seg === 'object' && (seg as any).__isCard) {
+                const { __isCard, ...cardData } = seg as any;
+
+                // 最终验证（确保在发送前）
+                // validateCard(cardData);
+
+                // 将卡片包装在数组中
+                result = JSON.stringify([cardData]);
+                messageType = 10;
+                break;
+            }
+
+            // 处理字符串类型的消息段
+            if (typeof seg === 'string') {
+                result += seg;
+                continue;
+            }
+
+            // 处理对象类型的消息段
+            switch (seg.type) {
                 case "text":
-                    result+=seg.text
+                    result += seg.text;
                     break;
                 case "at":
-                    result+=`(met)${seg.user_id}(${seg})`
+                    result += `(met)${seg.user_id}(met)`;
                     break;
                 case "audio":
-                    result+=`<audio src="${await this.uploadMedia(seg.url)}">`
+                    result = await this.uploadMedia(seg.url);
+                    messageType = 8; // 音频消息类型
                     break;
                 case "video":
-                    result+=`<video src="${await this.uploadMedia(seg.url)}"></video>`
-                    break
+                    result = await this.uploadMedia(seg.url);
+                    messageType = 3; // 视频消息类型
+                    break;
                 case "file":
-                    throw new Error(`can't send file`)
+                    throw new Error(`can't send file`);
                 case "card":
-                    result=JSON.stringify([seg])
-                    isCard=true
+                    // 最终验证（确保在发送前）
+                    // validateCard(seg);
+
+                    // 将卡片包装在数组中
+                    result = JSON.stringify([seg]);
+                    messageType = 10;
                     break;
                 case "image":
-                    result+=`![${seg.title||''}](${await this.uploadMedia(seg.url)})`
-                    break
+                    result = await this.uploadMedia(seg.url);
+                    messageType = 2; // 图片消息类型
+                    break;
                 case "markdown":
-                    result+=seg.text
+                    result = seg.text;
+                    messageType = 9; // Markdown 消息类型
                     break;
                 case "reply":
-                    if(quote) break
-                    quote={
-                        message_id:seg.id
+                    if (!quote) {
+                        quote = {
+                            message_id: seg.id
+                        };
                     }
                     break;
             }
+
+            // 如果是非文本消息，处理完第一个有效段后退出循环
+            if (messageType !== 1) break;
         }
-        return [result,quote,isCard]
+
+        return [result, quote, messageType];
     }
 }
 

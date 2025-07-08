@@ -68,17 +68,18 @@ export class Channel extends Contact{
         })
     }
     async sendMsg(message: Sendable, quote?: Quotable): Promise<Message.Ret> {
-        let isCard:boolean;
-        [message,quote,isCard]=await Message.processMessage.call(this.c,message,quote)
-        const {data}=await this.c.request.post('/v3/message/create',{
-            target_id:this.info.id,
-            content:message,
-            type:isCard?10:9,
-            quote:quote?.message_id
-        })
-        if(!data) throw new Error('发送消息失败')
-        this.c.logger.info(`send to Channel(${this.info.id}): `,message)
-        return data
+        const [content, quoteObj, type] = await Message.processMessage.call(this.c, message, quote);
+
+        const { data } = await this.c.request.post('/v3/message/create', {
+            target_id: this.info.id,
+            content, // 处理后的内容（图片URL / 文本 / Markdown / Card JSON）
+            type: type ?? 1, // 默认文本消息（type=1）
+            quote: quoteObj?.message_id,
+        });
+
+        if (!data) throw new Error('发送消息失败');
+        this.c.logger.info(`send to Channel(${this.info.id}): `, content);
+        return data;
     }
 
     async recallMsg(message_id: string): Promise<boolean> {
