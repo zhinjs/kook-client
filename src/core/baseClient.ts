@@ -6,6 +6,7 @@ import {Dict, LogLevel} from "@/types";
 import {EventMap,ChannelMessageEvent, PrivateMessageEvent} from "@/event";
 import {getFile} from "@/utils";
 import {Receiver} from "@/core/receiver";
+import {User} from "@/entries/user";
 
 export class BaseClient extends EventEmitter {
     request: AxiosInstance
