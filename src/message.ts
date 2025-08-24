@@ -202,7 +202,7 @@ export namespace Message {
                 const { __isCard, ...cardData } = seg as any;
 
                 // 最终验证（确保在发送前）
-                // validateCard(cardData);
+                validateCard(cardData);
 
                 // 将卡片包装在数组中
                 result = JSON.stringify([cardData]);
@@ -236,7 +236,7 @@ export namespace Message {
                     throw new Error(`can't send file`);
                 case "card":
                     // 最终验证（确保在发送前）
-                    // validateCard(seg);
+                    validateCard(seg);
 
                     // 将卡片包装在数组中
                     result = JSON.stringify([seg]);
