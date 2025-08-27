@@ -86,7 +86,7 @@ export class WebsocketReceiver extends Receiver {
 
             this.heartbeatTimeout = setTimeout(() => {
                 if (Date.now() - this.lastPongTime > 10000) { // 10秒超时
-                    this.logger.warn('Heartbeat timeout, reconnecting...');
+                    this.logger.debug('Heartbeat timeout, reconnecting...');
                     this.scheduleReconnect();
                 }
             }, 10000);
@@ -114,7 +114,7 @@ export class WebsocketReceiver extends Receiver {
                         this.emit('event', data.d);
                         break;
                     case OpCode.Reconnect:
-                        this.logger.warn('Received reconnect command from server', data.d);
+                        this.logger.debug('Received reconnect command from server', data.d);
                         this.scheduleReconnect();
                         break;
                     case OpCode.ResumeAck:
@@ -125,7 +125,7 @@ export class WebsocketReceiver extends Receiver {
                         this.logger.debug('Received pong from server');
                         break;
                     default:
-                        this.logger.warn('Received unknown opcode', data.s);
+                        this.logger.debug('Received unknown opcode', data.s);
                 }
             } catch (error) {
                 this.logger.error('Error processing WebSocket message', error);
@@ -228,7 +228,7 @@ export class WebsocketReceiver extends Receiver {
                 // 简单的网络连通性检查
                 require('dns').resolve('www.kookapp.cn', (err: any) => {
                     if (err) {
-                        this.logger.warn('Network connectivity issue detected');
+                        this.logger.debug('Network connectivity issue detected');
                         if (this.state === WebsocketReceiver.State.Closed) {
                             this.scheduleReconnect();
                         }
