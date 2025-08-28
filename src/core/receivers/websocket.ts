@@ -13,10 +13,21 @@ export class WebsocketReceiver extends Receiver {
     private readonly pingBaseInterval = 25000;
     private readonly helloTimeout = 5000;
 
+    // 重连相关属性
+    private reconnectAttempts = 0;
+    private maxReconnectAttempts = 10;
+    private reconnectBaseDelay = 1000;
+    private reconnectTimer: NodeJS.Timeout | null = null;
+
+    // 心跳检测相关属性
+    private lastPongTime = 0;
+    private heartbeatTimeout: NodeJS.Timeout | null = null;
+
     constructor(client: BaseClient, public config: WebsocketReceiver.Config) {
         super(client);
         this._state = WebsocketReceiver.State.Initial;
         this.compress = config.compress ?? false;
+        this.setupNetworkMonitoring();
     }
 
     get state(): WebsocketReceiver.State {
@@ -25,7 +36,7 @@ export class WebsocketReceiver extends Receiver {
 
     private set state(value: WebsocketReceiver.State) {
         this._state = value;
-        this.logger.debug(`WebSocket state changed to: ${WebsocketReceiver.State[value]}`);
+        this.logger.info(`WebSocket state changed to: ${WebsocketReceiver.State[value]}`);
     }
 
     get logger() {
@@ -62,10 +73,24 @@ export class WebsocketReceiver extends Receiver {
     private sendPing() {
         if (this.ws?.readyState === WebSocket.OPEN) {
             // 发送包含当前 sn 的 Ping（必须为数字）
-            this.ws.send(JSON.stringify({ 
+            this.ws.send(JSON.stringify({
                 s: OpCode.Ping,
-                sn: Number(this.sn) || 0  // 确保转换为数字
+                sn: this.sn || 0
             }));
+            this.lastPongTime = Date.now();
+
+            // 设置心跳超时检测
+            if (this.heartbeatTimeout) {
+                clearTimeout(this.heartbeatTimeout);
+            }
+
+            this.heartbeatTimeout = setTimeout(() => {
+                if (Date.now() - this.lastPongTime > 10000) { // 10秒超时
+                    this.logger.debug('Heartbeat timeout, reconnecting...');
+                    this.scheduleReconnect();
+                }
+            }, 10000);
+
             this.logger.debug(`Sent ping to server with sn: ${this.sn}`);
         }
     }
@@ -79,7 +104,7 @@ export class WebsocketReceiver extends Receiver {
                     this.decryptData(event.toString(), this.config.encrypt_key ?? '')
                 );
 
-                if (data.sn) this.sn = data.sn.toString(); // Ensure sn is string
+                if (data.sn) this.sn = Number(data.sn); // 确保为数字
 
                 switch (data.s) {
                     case OpCode.Hello:
@@ -89,32 +114,44 @@ export class WebsocketReceiver extends Receiver {
                         this.emit('event', data.d);
                         break;
                     case OpCode.Reconnect:
-                        this.reconnect();
+                        this.logger.debug('Received reconnect command from server', data.d);
+                        this.scheduleReconnect();
                         break;
                     case OpCode.ResumeAck:
                         this.emit('resume', data.d);
                         break;
                     case OpCode.Pong:
+                        this.lastPongTime = Date.now();
                         this.logger.debug('Received pong from server');
                         break;
                     default:
-                        this.logger.warn('Received unknown opcode', data.s);
+                        this.logger.debug('Received unknown opcode', data.s);
                 }
             } catch (error) {
                 this.logger.error('Error processing WebSocket message', error);
             }
         });
 
-        this.ws.on('close', () => {
-            this.logger.info('WebSocket connection closed');
+        this.ws.on('close', (code, reason) => {
+            this.logger.info(`WebSocket connection closed, code: ${code}, reason: ${reason.toString()}`);
             this.cleanup();
             this.state = WebsocketReceiver.State.Closed;
+
+            // 自动重连（非正常关闭时）
+            if (code !== 1000) { // 1000是正常关闭
+                this.scheduleReconnect();
+            }
         });
 
         this.ws.on('error', (error) => {
             this.logger.error('WebSocket error', error);
             this.cleanup();
             this.state = WebsocketReceiver.State.Closed;
+            this.scheduleReconnect();
+        });
+
+        this.ws.on('open', () => {
+            this.logger.debug('WebSocket connection opened');
         });
     }
 
@@ -124,6 +161,18 @@ export class WebsocketReceiver extends Receiver {
             clearInterval(timer);
             this.timers.delete(key);
         });
+
+        // 清理重连定时器
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+
+        // 清理心跳超时检测
+        if (this.heartbeatTimeout) {
+            clearTimeout(this.heartbeatTimeout);
+            this.heartbeatTimeout = null;
+        }
 
         // Clean up WebSocket
         if (this.ws) {
@@ -137,7 +186,7 @@ export class WebsocketReceiver extends Receiver {
 
     private getResumeQueryParams(): URLSearchParams {
         const params = new URLSearchParams();
-        
+
         if (this.sn) params.append('sn', this.sn.toString());
         if (this.session_id) params.append('session_id', this.session_id);
         params.append('resume', '1');
@@ -145,17 +194,57 @@ export class WebsocketReceiver extends Receiver {
         return params;
     }
 
+    private scheduleReconnect() {
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            this.logger.error('Max reconnection attempts reached');
+            return;
+        }
+
+        this.reconnectAttempts++;
+        const delay = this.reconnectBaseDelay * Math.pow(2, this.reconnectAttempts - 1);
+
+        this.logger.info(`Scheduling reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnect().catch(error => {
+                this.logger.error('Reconnect failed', error);
+                this.scheduleReconnect();
+            });
+        }, delay);
+    }
+
     async reconnect(): Promise<void> {
         this.logger.info('Attempting to reconnect...');
-        this.buffer = [];
+        this.cleanup();
         this.state = WebsocketReceiver.State.Reconnection;
         await this.connect(true);
+    }
+
+    private setupNetworkMonitoring() {
+        // 在Node.js环境中监听网络状态变化
+        if (typeof process !== 'undefined') {
+            // 可以添加定期的网络连通性检查
+            const networkCheckInterval = setInterval(() => {
+                // 简单的网络连通性检查
+                require('dns').resolve('www.kookapp.cn', (err: any) => {
+                    if (err) {
+                        this.logger.debug('Network connectivity issue detected');
+                        if (this.state === WebsocketReceiver.State.Closed) {
+                            this.scheduleReconnect();
+                        }
+                    }
+                });
+            }, 30000); // 每30秒检查一次
+
+            // 在清理时移除监听
+            this.timers.set('networkCheck', networkCheckInterval);
+        }
     }
 
     async connect(isReconnect = false): Promise<void> {
         try {
             this.state = WebsocketReceiver.State.PullingGateway;
-            
+
             const gatewayUrl = await this.getGatewayUrl(this.config.compress ? 1 : 0);
             const url = new URL(gatewayUrl);
 
@@ -178,6 +267,7 @@ export class WebsocketReceiver extends Receiver {
             }
 
             this.state = WebsocketReceiver.State.Open;
+            this.reconnectAttempts = 0; // 重置重连计数器
             this.sendPing();
 
             // Schedule periodic pings with jitter
@@ -188,6 +278,11 @@ export class WebsocketReceiver extends Receiver {
         } catch (error) {
             this.logger.error('WebSocket connection error', error);
             this.cleanup();
+
+            // 连接失败时也触发重连
+            if (!isReconnect) {
+                this.scheduleReconnect();
+            }
             throw error;
         }
     }
