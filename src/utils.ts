@@ -1,8 +1,7 @@
-import {BinaryLike, createHash, createCipheriv, createDecipheriv} from "crypto";
+import {BinaryLike, createHash} from "crypto";
 import * as fs from 'fs'
 import axios from 'axios'
 import {Stream} from "node:stream";
-import { fileTypeFromFile } from 'file-type';
 
 export const toObject = <T = any>(data: any) => {
     if (Buffer.isBuffer(data)) return JSON.parse(data.toString()) as T;
