@@ -1,6 +1,6 @@
 {
     "name": "kook-client",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "nodejs 平台 kook机器人开发SDK",
     "main": "lib/index.js",
     "engines": {

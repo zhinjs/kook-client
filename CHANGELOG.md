@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/zhinjs/kook-client/compare/v1.0.0...v1.0.1) (2025-08-28)
+
+
+### Bug Fixes
+
+* remove utils ([bdab783](https://github.com/zhinjs/kook-client/commit/bdab7838fdb4a67cc07c4cda19cf778f46df815b))
+
 ## 1.0.0 (2025-08-28)
 
 
