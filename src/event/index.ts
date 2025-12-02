@@ -1,4 +1,4 @@
-import {ChannelMessageEvent, PrivateMessageEvent} from "./message";
+import { ChannelMessageEvent, PrivateMessageEvent } from "./message";
 
 export * from "./message"
 
@@ -9,4 +9,12 @@ export interface EventMap {
     'message.channel'(e: ChannelMessageEvent): void
 
     'message.private'(e: PrivateMessageEvent): void
+}
+
+export interface EventMaps {
+    'message': [PrivateMessageEvent | ChannelMessageEvent]
+
+    'message.channel': [ChannelMessageEvent]
+
+    'message.private': [PrivateMessageEvent]
 }

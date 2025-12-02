@@ -3,12 +3,14 @@ import FormData from 'form-data';
 import * as log4js from 'log4js'
 import {EventEmitter} from "events";
 import {Dict, LogLevel} from "@/types";
-import {EventMap,ChannelMessageEvent, PrivateMessageEvent} from "@/event";
+import {ChannelMessageEvent, PrivateMessageEvent} from "@/event";
 import {getFile} from "@/utils";
 import {Receiver} from "@/core/receiver";
 import {User} from "@/entries/user";
 
-export class BaseClient extends EventEmitter {
+import type { EventMap, EventMaps} from "@/event";
+
+export class BaseClient extends EventEmitter<EventMaps> {
     request: AxiosInstance
     self_id: string
     nickname: string
@@ -126,40 +128,40 @@ export class BaseClient extends EventEmitter {
 
 }
 
-export interface KookClient {
-    on<T extends keyof EventMap>(event: T, callback: EventMap[T]): this
+// export interface KookClient {
+//     on<T extends keyof EventMap>(event: T, callback: EventMap[T]): this
 
-    on<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback: (...args: any[]) => void): this
+//     on<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback: (...args: any[]) => void): this
 
-    once<T extends keyof EventMap>(event: T, callback: EventMap[T]): this
+//     once<T extends keyof EventMap>(event: T, callback: EventMap[T]): this
 
-    once<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback: (...args: any[]) => void): this
+//     once<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback: (...args: any[]) => void): this
 
-    off<T extends keyof EventMap>(event: T, callback?: EventMap[T]): this
+//     off<T extends keyof EventMap>(event: T, callback?: EventMap[T]): this
 
-    off<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback?: (...args: any[]) => void): this
+//     off<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback?: (...args: any[]) => void): this
 
-    emit<T extends keyof EventMap>(event: T, ...args: Parameters<EventMap[T]>): boolean
+//     emit<T extends keyof EventMap>(event: T, ...args: Parameters<EventMap[T]>): boolean
 
-    emit<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, ...args: any[]): boolean
+//     emit<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, ...args: any[]): boolean
 
-    addListener<T extends keyof EventMap>(event: T, callback: EventMap[T]): this
+//     addListener<T extends keyof EventMap>(event: T, callback: EventMap[T]): this
 
-    addListener<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback: (...args: any[]) => void): this
+//     addListener<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback: (...args: any[]) => void): this
 
-    addListenerOnce<T extends keyof EventMap>(event: T, callback: EventMap[T]): this
+//     addListenerOnce<T extends keyof EventMap>(event: T, callback: EventMap[T]): this
 
-    addListenerOnce<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback: (...args: any[]) => void): this
+//     addListenerOnce<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback: (...args: any[]) => void): this
 
-    removeListener<T extends keyof EventMap>(event: T, callback?: EventMap[T]): this
+//     removeListener<T extends keyof EventMap>(event: T, callback?: EventMap[T]): this
 
-    removeListener<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback?: (...args: any[]) => void): this
+//     removeListener<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>, callback?: (...args: any[]) => void): this
 
-    removeAllListeners<T extends keyof EventMap>(event: T): this
+//     removeAllListeners<T extends keyof EventMap>(event: T): this
 
-    removeAllListeners<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>): this
+//     removeAllListeners<S extends string | symbol>(event: S & Exclude<string | symbol, keyof EventMap>): this
 
-}
+// }
 
 export namespace BaseClient {
     export const defaultConfig:Partial<Config>={
