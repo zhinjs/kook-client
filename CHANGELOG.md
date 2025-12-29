@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/zhinjs/kook-client/compare/v1.0.1...v1.0.2) (2025-12-29)
+
+
+### Bug Fixes
+
+* 引用路径bug ([0c837f2](https://github.com/zhinjs/kook-client/commit/0c837f2c306c4f671569d499c26ee45288c36306))
+
 ## [1.0.1](https://github.com/zhinjs/kook-client/compare/v1.0.0...v1.0.1) (2025-12-29)
 
 
