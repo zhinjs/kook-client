@@ -12,9 +12,9 @@
         "compile": "tsc --project tsconfig.build.json && tsc-alias -p tsconfig.build.json",
         "dtsc": "dtsc --project tsconfig.dtsc.json",
         "clean": "rm -rf ./lib",
-        "build": "npm run compile && npm run dtsc",
+        "build": "pnpm run compile && pnpm run dtsc",
         "dev": "tsx --tsconfig tsconfig.json ./src/test.ts",
-        "pub": "npm publish --access public",
+        "pub": "pnpm publish --access public",
         "docs:dev": "vitepress dev docs --port 5566 --host 0.0.0.0",
         "docs:build": "vitepress build docs",
         "docs:serve": "vitepress serve docs",
@@ -53,7 +53,7 @@
         "tsconfig-paths": "^4.2.0",
         "tsx": "^4.19.2",
         "typescript": "^5.9.2",
-        "vitepress": "^0.1.1"
+        "vitepress": "^1.6.4"
     },
     "pnpm": {
         "overrides": {
