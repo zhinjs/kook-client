@@ -2,6 +2,7 @@ import { Receiver } from "@/core/receiver";
 import { BaseClient } from "@";
 import { WebSocket } from "ws";
 import { OpCode } from "@/constans";
+import * as dns from "dns";
 
 export class WebsocketReceiver extends Receiver {
     private _state: WebsocketReceiver.State;
@@ -226,7 +227,7 @@ export class WebsocketReceiver extends Receiver {
             // 可以添加定期的网络连通性检查
             const networkCheckInterval = setInterval(() => {
                 // 简单的网络连通性检查
-                require('dns').resolve('www.kookapp.cn', (err: any) => {
+                dns.resolve('www.kookapp.cn', (err: any) => {
                     if (err) {
                         this.logger.debug('Network connectivity issue detected');
                         if (this.state === WebsocketReceiver.State.Closed) {

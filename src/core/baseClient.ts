@@ -1,6 +1,6 @@
 import axios, {AxiosInstance} from "axios";
 import FormData from 'form-data';
-import * as log4js from 'log4js'
+import log4js from 'log4js'
 import {EventEmitter} from "events";
 import {Dict, LogLevel} from "@/types";
 import {ChannelMessageEvent, PrivateMessageEvent} from "@/event";
@@ -121,7 +121,7 @@ export class BaseClient extends EventEmitter<EventMaps> {
         while (eventNames.length) {
             let fullEventName = `${prefix}.${eventNames.shift()}`
             if (fullEventName.startsWith('.')) fullEventName = fullEventName.slice(1)
-            this.emit(fullEventName, payload)
+            this.emit(fullEventName as keyof EventMap, payload as any)
             prefix = fullEventName
         }
     }
