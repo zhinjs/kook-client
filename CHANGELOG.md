@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3](https://github.com/zhinjs/kook-client/compare/v1.0.2...v1.0.3) (2025-12-29)
+
+
+### Bug Fixes
+
+* missing dep ([1136a26](https://github.com/zhinjs/kook-client/commit/1136a26b21e49403cd51ac6dc35d95433ea9f284))
+* 安全漏洞 ([a4c6aad](https://github.com/zhinjs/kook-client/commit/a4c6aaddfd1a45fbee23c98b61bc35600932494c))
+
 ## [1.0.2](https://github.com/zhinjs/kook-client/compare/v1.0.1...v1.0.2) (2025-12-29)
 
 
