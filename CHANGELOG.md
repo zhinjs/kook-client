@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/zhinjs/kook-client/compare/v1.0.3...v1.0.4) (2025-12-29)
+
+
+### Bug Fixes
+
+* export event ([01322ed](https://github.com/zhinjs/kook-client/commit/01322ed0b981eab2724d037d2940a488c704a326))
+
 ## [1.0.3](https://github.com/zhinjs/kook-client/compare/v1.0.2...v1.0.3) (2025-12-29)
 
 
