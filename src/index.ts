@@ -1,5 +1,6 @@
 export * from './core/baseClient.js'
 export * from './core/receivers/index.js'
+export * from './event/index.js'
 export * from './client.js'
 export * from './elements.js'
 export * from './types.js'
