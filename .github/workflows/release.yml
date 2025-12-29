@@ -18,18 +18,24 @@ jobs:
       # Checkout
       - uses: actions/checkout@v4
         if: ${{ steps.release.outputs.release_created }}
+      # Setup pnpm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+        if: ${{ steps.release.outputs.release_created }}
       # Setup node with OIDC for Trusted Publisher
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
         if: ${{ steps.release.outputs.release_created }}
       # Install dependencies
-      - run: npm install
+      - run: pnpm install --frozen-lockfile
         if: ${{ steps.release.outputs.release_created }}
       # Build output
-      - run: npm run build
+      - run: pnpm run build
         if: ${{ steps.release.outputs.release_created }}
       # Publish to npm
-      - run: npm run pub
+      - run: pnpm run pub
         if: ${{ steps.release.outputs.release_created }}
