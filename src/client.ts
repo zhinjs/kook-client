@@ -1,11 +1,11 @@
-import {BaseClient} from "./core/baseClient";
-import {Guild} from "./entries/guild";
-import {Channel} from "@/entries/channel";
-import {User} from "@/entries/user";
-import {GuildMember} from "@/entries/guildMember";
-import {ChannelMember} from "@/entries/channelMember";
-import {EventMap} from "@/event";
-import {Quotable, Sendable} from "@/elements";
+import {BaseClient} from "./core/baseClient.js";
+import {Guild} from "./entries/guild.js";
+import {Channel} from "./entries/channel.js";
+import {User} from "./entries/user.js";
+import {GuildMember} from "./entries/guildMember.js";
+import {ChannelMember} from "./entries/channelMember.js";
+import {EventMap} from "./event/index.js";
+import {Quotable, Sendable} from "./elements.js";
 type MemberMap=Map<string,User.Info>
 type BlackMap=Map<string,Guild.BlackInfo>
 export class Client extends BaseClient {

@@ -1,6 +1,6 @@
-import { ChannelMessageEvent, PrivateMessageEvent } from "./message";
+import { ChannelMessageEvent, PrivateMessageEvent } from "./message.js";
 
-export * from "./message"
+export * from "./message.js"
 
 
 export interface EventMap {

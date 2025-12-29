@@ -1,9 +1,9 @@
-import {MessageSegment, Quotable, segment, Sendable, validateCard} from "@/elements";
-import {BaseClient} from "@/core/baseClient";
-import {Client} from "./client";
-import {User} from "@/entries/user";
-import {ChannelType, UnsupportedMethodError} from "@/constans";
-import {Guild} from "@/entries/guild";
+import {MessageSegment, Quotable, segment, Sendable, validateCard} from "./elements.js";
+import {BaseClient} from "./core/baseClient.js";
+import {Client} from "./client.js";
+import {User} from "./entries/user.js";
+import {ChannelType, UnsupportedMethodError} from "./constans.js";
+import {Guild} from "./entries/guild.js";
 
 export abstract class Message {
     message_type: Message.Type

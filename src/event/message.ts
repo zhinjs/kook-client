@@ -1,6 +1,6 @@
-import {Client, Sendable} from "@";
-import {Message} from "@/message"
-import {ChannelType} from "@/constans";
+import {Client, Sendable} from "../index.js";
+import {Message} from "../message.js"
+import {ChannelType} from "../constans.js";
 
 export interface MessageEvent {
     reply(message: Sendable, quote?: boolean): Promise<any>

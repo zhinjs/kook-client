@@ -1,5 +1,5 @@
-import {User} from "@/entries/user";
-import {Client} from "@";
+import {User} from "./user.js";
+import {Client} from "../index.js";
 
 export class GuildMember extends User{
     constructor(c:Client,public guild_id:string,info:User.Info) {

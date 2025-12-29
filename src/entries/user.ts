@@ -1,6 +1,6 @@
-import {Contact} from "@/entries/contact";
-import {Client, Message, Quotable, Sendable} from "@";
-import { PrivateMessageEvent} from "@/event";
+import {Contact} from "./contact.js";
+import {Client, Message, Quotable, Sendable} from "../index.js";
+import { PrivateMessageEvent} from "../event/index.js";
 
 export class User extends Contact{
     constructor(c:Client,public info:User.Info) {

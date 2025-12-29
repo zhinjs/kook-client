@@ -1,5 +1,5 @@
-import {User} from "@/entries/user";
-import {Client} from "@";
+import {User} from "./user.js";
+import {Client} from "../index.js";
 
 export class ChannelMember extends User{
     constructor(c:Client,public channel_id:string,info:User.Info) {

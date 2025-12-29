@@ -1,8 +1,8 @@
 import {EventEmitter} from "events";
 import {createDecipheriv} from 'crypto'
-import {BaseClient, Client} from "@";
-import {ChannelType, OpCode} from "@/constans";
-import {ChannelMessageEvent, PrivateMessageEvent} from "@/event";
+import {BaseClient, Client} from "../index.js";
+import {ChannelType, OpCode} from "../constans.js";
+import {ChannelMessageEvent, PrivateMessageEvent} from "../event/index.js";
 export abstract class Receiver extends EventEmitter{
     sn:number=0
     buffer:Receiver.EventPacket[]=[]

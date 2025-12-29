@@ -1,5 +1,5 @@
-import {Receiver} from "@/core/receiver";
-import {BaseClient} from "@";
+import {Receiver} from "../receiver.js";
+import {BaseClient} from "../../index.js";
 export class WebhookReceiver extends Receiver{
     constructor(client:BaseClient,public config:WebhookReceiver.Config) {
         super(client);

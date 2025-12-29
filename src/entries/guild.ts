@@ -1,8 +1,8 @@
-import {Contact} from "@/entries/contact";
-import {Client, Message, Quotable, Sendable} from "@";
-import {NotifyType, UnsupportedMethodError} from "@/constans";
-import {Channel} from "@/entries/channel";
-import {User} from "@/entries/user";
+import {Contact} from "./contact.js";
+import {Client, Message, Quotable, Sendable} from "../index.js";
+import {NotifyType, UnsupportedMethodError} from "../constans.js";
+import {Channel} from "./channel.js";
+import {User} from "./user.js";
 
 export class Guild extends Contact{
     constructor(c:Client,public info:Guild.Info) {

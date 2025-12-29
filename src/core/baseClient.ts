@@ -2,13 +2,13 @@ import axios, {AxiosInstance} from "axios";
 import FormData from 'form-data';
 import log4js from 'log4js'
 import {EventEmitter} from "events";
-import {Dict, LogLevel} from "@/types";
-import {ChannelMessageEvent, PrivateMessageEvent} from "@/event";
-import {getFile} from "@/utils";
-import {Receiver} from "@/core/receiver";
-import {User} from "@/entries/user";
+import {Dict, LogLevel} from "../types.js";
+import {ChannelMessageEvent, PrivateMessageEvent} from "../event/index.js";
+import {getFile} from "../utils.js";
+import {Receiver} from "./receiver.js";
+import {User} from "../entries/user.js";
 
-import type { EventMap, EventMaps} from "@/event";
+import type { EventMap, EventMaps} from "../event/index.js";
 
 export class BaseClient extends EventEmitter<EventMaps> {
     request: AxiosInstance

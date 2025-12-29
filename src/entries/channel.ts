@@ -1,8 +1,8 @@
-import {ChannelType} from "@/constans";
-import {Contact} from "@/entries/contact";
-import {Client, Message, Quotable, Sendable} from "@";
-import {User} from "@/entries/user";
-import {ChannelMessageEvent} from "@/event";
+import {ChannelType} from "../constans.js";
+import {Contact} from "./contact.js";
+import {Client, Message, Quotable, Sendable} from "../index.js";
+import {User} from "./user.js";
+import {ChannelMessageEvent} from "../event/index.js";
 export class Channel extends Contact{
     constructor(c:Client,public info:Channel.Info) {
         super(c);

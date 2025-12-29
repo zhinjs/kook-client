@@ -1,4 +1,4 @@
-import {Quotable, Sendable, Message, Client} from "@";
+import {Quotable, Sendable, Message, Client} from "../index.js";
 
 export abstract class Contact {
     protected constructor(public c: Client) {
