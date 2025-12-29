@@ -1,5 +1,5 @@
 import axios, {AxiosInstance} from "axios";
-import FormData from 'form-data';
+import { FormData } from 'formdata-node';
 import log4js from 'log4js'
 import {EventEmitter} from "events";
 import {Dict, LogLevel} from "../types.js";
@@ -77,9 +77,9 @@ export class BaseClient extends EventEmitter<EventMaps> {
         formData.append('file', fileData, 'awa.png'); // 显式指定文件名
 
         try {
+            // formdata-node 与 axios 配合使用时，axios 会自动设置 Content-Type
             const response = await this.request.post(`/v3/asset/create`, formData, {
                 headers: {
-                    ...formData.getHeaders(), // 自动设置 Content-Type
                     'Accept': 'application/json',
                 },
             });
