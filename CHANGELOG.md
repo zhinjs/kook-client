@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.1](https://github.com/zhinjs/kook-client/compare/v1.0.0...v1.0.1) (2025-12-29)
+
+
+### Bug Fixes
+
+* esmify ([555ea17](https://github.com/zhinjs/kook-client/commit/555ea17ad96d3e1203fe30bb18536954a55d78f9))
+* remove utils ([bdab783](https://github.com/zhinjs/kook-client/commit/bdab7838fdb4a67cc07c4cda19cf778f46df815b))
+* update BaseClient to use EventMaps and clean up imports ([edf120b](https://github.com/zhinjs/kook-client/commit/edf120b2c7ef913fd668695e31651a93f986fc30))
+
 ## 1.0.0 (2025-08-28)
 
 
