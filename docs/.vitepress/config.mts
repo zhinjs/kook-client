@@ -35,6 +35,7 @@ export default defineConfig({
               text:'消息段',
               activeMatch:'/segment/',
               items:[
+                  { text: '概述', link: '/segment/index' },
                   { text: '文本', link: '/segment/text' },
                   { text: '表情', link: '/segment/face' },
                   { text: '图片', link: '/segment/image' },
@@ -50,10 +51,13 @@ export default defineConfig({
                 text: '事件',
                 activeMatch: '/event/',
                 items: [
+                    { text: '事件系统', link: '/event/index' },
                     { text: '私聊事件', link: '/event/private' },
                     { text: '频道消息事件', link: '/event/channel' },
                 ]
             },
+            { text: '常见问题', link: '/faq' },
+            { text: '最佳实践', link: '/best-practices' },
             { text: '更新日志', link: 'https://github.com/zhinjs/kook-client/blob/master/CHANGELOG.md', target: '_blank', }
         ],
         sidebar: [
@@ -66,8 +70,17 @@ export default defineConfig({
                 ]
             },
             {
+                text: '事件系统',
+                items: [
+                    { text: '事件概述', link: '/event/index' },
+                    { text: '私聊事件', link: '/event/private' },
+                    { text: '频道消息事件', link: '/event/channel' },
+                ]
+            },
+            {
                 text: '消息段',
                 items: [
+                    { text: '概述', link: '/segment/index' },
                     { text: '文本', link: '/segment/text' },
                     { text: '表情', link: '/segment/face' },
                     { text: '图片', link: '/segment/image' },
@@ -87,6 +100,13 @@ export default defineConfig({
                     { text: '角色(Role)', link: '/module/role' },
                     { text: '频道(Channel)', link: '/module/channel' },
                     { text: '用户(User)', link: '/module/user' },
+                ]
+            },
+            {
+                text: '进阶',
+                items: [
+                    { text: '最佳实践', link: '/best-practices' },
+                    { text: '常见问题', link: '/faq' },
                 ]
             }
         ],
