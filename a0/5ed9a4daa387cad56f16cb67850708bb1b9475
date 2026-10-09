@@ -1,0 +1,31 @@
+.github/workflows/ci.yml
+  s_a5dc81d701255f::t_d76b69b8568f89 1-25
+docs/src/config.md
+  s_a5dc81d701255f::t_0caf165a370feb 14-21
+package.json
+  s_a5dc81d701255f::t_576a5713ed1e64 21
+src/client.ts
+  s_a5dc81d701255f::t_e7fc8a8d872df0 29
+src/core/baseClient.ts
+  s_a5dc81d701255f::t_fc83a5aa62a245 171-173
+src/core/receivers/websocket.ts
+  s_a5dc81d701255f::t_96611b405b803d 8-14,38,66-97,135,142-143,146-148,152-153,174,192-195,217-220,238-241,289,293-295,300,305-307,310,313-314,317,319,323,334,347,358-359
+tests/websocket-lifecycle.test.mjs
+  s_a5dc81d701255f::t_61e643f336f15b 1-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a05ed9a4daa387cad56f16cb67850708bb1b9475",
+  "prompts": {},
+  "sessions": {
+    "s_a5dc81d701255f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f03c-6e20-75c3-9d29-86f6fd1ed79b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Class Liu <chunlang.liu@rdc-west.com>"
+    }
+  }
+}
