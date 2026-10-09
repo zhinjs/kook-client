@@ -168,6 +168,9 @@ export namespace BaseClient {
         ignore:'bot'
     }
     export interface Config {
+        handleProcessErrors?: boolean
+        autoReconnect?: boolean
+        socketFactory?: (url: string) => import("ws").WebSocket
         token:string
         mode:Receiver.Mode
         /**
