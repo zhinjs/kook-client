@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/zhinjs/kook-client/compare/v1.0.4...v1.0.5) (2026-10-09)
+
+
+### Bug Fixes
+
+* make websocket lifecycle safe for host-managed recovery ([a05ed9a](https://github.com/zhinjs/kook-client/commit/a05ed9a4daa387cad56f16cb67850708bb1b9475))
+
 ## [1.0.4](https://github.com/zhinjs/kook-client/compare/v1.0.3...v1.0.4) (2025-12-29)
 
 
