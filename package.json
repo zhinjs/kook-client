@@ -18,7 +18,7 @@
         "docs:dev": "vitepress dev docs --port 5566 --host 0.0.0.0",
         "docs:build": "vitepress build docs",
         "docs:serve": "vitepress serve docs",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "pnpm run compile && node --test tests/*.test.mjs"
     },
     "files": [
         "lib",

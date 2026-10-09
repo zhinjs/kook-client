@@ -26,7 +26,7 @@ export class Client extends BaseClient {
         if(nodeVersion<16){
             this.logger.warn(`你的node版本(${process.version}) <16，可能会出现不可预测的错误，请升级node版本，为确保服务正常运行，请升级node版本`)
         }
-        process.on("uncaughtException",e=>{
+        if (this.config.handleProcessErrors !== false) process.on("uncaughtException",e=>{
             this.logger.debug(e.stack)
         })
     }
